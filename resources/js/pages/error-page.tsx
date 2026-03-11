@@ -2,32 +2,33 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { AlertTriangle, Clock3, Home, ShieldAlert, TriangleAlert } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from '@/hooks/use-translations';
 import { home } from '@/routes';
 
 const errorContent = {
     403: {
-        title: 'Accesso negato',
-        description: 'Non hai i permessi necessari per visualizzare questa pagina.',
+        title: 'Access denied',
+        description: 'You do not have permission to view this page.',
         icon: ShieldAlert,
     },
     404: {
-        title: 'Pagina non trovata',
-        description: 'La risorsa richiesta non esiste o e` stata spostata.',
+        title: 'Page not found',
+        description: 'The requested resource does not exist or has been moved.',
         icon: AlertTriangle,
     },
     429: {
-        title: 'Troppe richieste',
-        description: 'Hai inviato troppe richieste in poco tempo. Attendi e riprova.',
+        title: 'Too many requests',
+        description: 'You have sent too many requests in a short time. Please wait and try again.',
         icon: Clock3,
     },
     500: {
-        title: 'Errore interno',
-        description: 'Si e` verificato un errore inatteso. Il problema verra` tracciato.',
+        title: 'Internal server error',
+        description: 'An unexpected error occurred. The problem will be tracked automatically.',
         icon: TriangleAlert,
     },
     503: {
-        title: 'Servizio non disponibile',
-        description: 'L’applicazione e` momentaneamente non disponibile. Riprova tra poco.',
+        title: 'Service unavailable',
+        description: 'The application is temporarily unavailable. Please try again later.',
         icon: TriangleAlert,
     },
 } as const;
@@ -38,12 +39,13 @@ type ErrorPageProps = {
 
 export default function ErrorPage({ status }: ErrorPageProps) {
     const { name } = usePage().props as { name: string };
+    const { t } = useTranslations();
     const content = errorContent[status] ?? errorContent[500];
     const Icon = content.icon;
 
     return (
         <>
-            <Head title={`${status} ${content.title}`} />
+            <Head title={`${status} ${t(content.title)}`} />
 
             <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,#f4efe2_0%,#f8f5ee_45%,#ffffff_100%)] px-6 py-10 text-slate-950">
                 <div className="mx-auto flex w-full max-w-5xl items-center justify-between">
@@ -69,14 +71,14 @@ export default function ErrorPage({ status }: ErrorPageProps) {
 
                         <div className="space-y-5">
                             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-                                Errore applicativo
+                                {t('Application error')}
                             </p>
                             <div className="space-y-3">
                                 <h1 className="text-4xl font-semibold tracking-tight">
-                                    {content.title}
+                                    {t(content.title)}
                                 </h1>
                                 <p className="max-w-2xl text-base leading-7 text-slate-600">
-                                    {content.description}
+                                    {t(content.description)}
                                 </p>
                             </div>
 
@@ -84,7 +86,7 @@ export default function ErrorPage({ status }: ErrorPageProps) {
                                 <Button asChild>
                                     <Link href={home()}>
                                         <Home className="size-4" />
-                                        Torna all’app
+                                        {t('Return to the app')}
                                     </Link>
                                 </Button>
                             </div>

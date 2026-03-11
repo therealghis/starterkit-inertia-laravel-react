@@ -3,14 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
 
 class ErrorPageTest extends TestCase {
-    use RefreshDatabase;
-
     public function test_missing_pages_are_rendered_with_the_inertia_error_page(): void {
         $this->get('/definitely-missing-page')
             ->assertNotFound()

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
+            SetLocale::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
@@ -33,7 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return back()->with('flash.error', 'La sessione e` scaduta. Riprova.');
             }
 
-            if (! in_array($status, [403, 404, 429, 500, 503], true)) {
+            if (! in_array($status, [403, 404, 409, 429, 500, 503], true)) {
                 return $response;
             }
 

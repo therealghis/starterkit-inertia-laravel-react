@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from '@/hooks/use-translations';
 
 type EmptyStateProps = {
     title: string;
@@ -17,6 +18,8 @@ export default function EmptyState({
     actionLabel,
     actionHref,
 }: EmptyStateProps) {
+    const { t } = useTranslations();
+
     return (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-sidebar-border/80 bg-background/80 px-6 py-16 text-center">
             {icon ? (
@@ -26,13 +29,13 @@ export default function EmptyState({
             ) : null}
 
             <div className="max-w-md space-y-2">
-                <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-                <p className="text-sm text-muted-foreground">{description}</p>
+                <h2 className="text-lg font-semibold tracking-tight">{t(title)}</h2>
+                <p className="text-sm text-muted-foreground">{t(description)}</p>
             </div>
 
             {actionLabel && actionHref ? (
                 <Button asChild className="mt-6">
-                    <Link href={actionHref}>{actionLabel}</Link>
+                    <Link href={actionHref}>{t(actionLabel)}</Link>
                 </Button>
             ) : null}
         </div>
