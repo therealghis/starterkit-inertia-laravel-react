@@ -73,10 +73,15 @@ Use Wayfinder with `useForm`:
 <!-- Wayfinder useForm -->
 ```typescript
 import { store } from "@/actions/App/Http/Controllers/ExampleController";
+import { useForm } from "@inertiajs/react";
 
 const form = useForm({ name: "My Big Post" });
 form.submit(store());
 ```
+
+Important:
+- `useForm` here means Inertia's `useForm` from `@inertiajs/react`
+- do not replace it with React Hook Form or another generic React form helper when the form is submitted through Inertia
 
 ## Verification
 

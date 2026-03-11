@@ -9,7 +9,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.3.28
+- php - ^8.4
 - inertiajs/inertia-laravel (INERTIA_LARAVEL) - v2
 - laravel/fortify (FORTIFY) - v1
 - laravel/framework (LARAVEL) - v12
@@ -34,6 +34,12 @@ This project has domain-specific skills available. You MUST activate the relevan
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
+- UI components must use `shadcn/ui` as the base component library already present in the project.
+- Reusable `shadcn/ui` primitives live in `resources/js/components/ui`.
+- Application-level wrappers and composed components live in `resources/js/components`.
+- Do not introduce a parallel UI library or ad-hoc component system when an existing `shadcn/ui` component can be reused or extended.
+- For Inertia forms, always use Inertia's form APIs (`<Form>` from `@inertiajs/react` or `useForm` from `@inertiajs/react`).
+- Do not use a generic React `useForm` library or custom classic React form state in places that submit through Inertia, because it breaks expected Inertia form behavior.
 
 ## Verification Scripts
 
@@ -147,6 +153,8 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - Inertia creates fully client-side rendered SPAs without modern SPA complexity, leveraging existing server-side patterns.
 - Components live in `resources/js/pages` (unless specified in `vite.config.js`). Use `Inertia::render()` for server-side routing instead of Blade views.
 - ALWAYS use `search-docs` tool for version-specific Inertia documentation and updated code examples.
+- When building forms for this project, prefer Inertia `<Form>` and `useForm` from `@inertiajs/react`.
+- If a form posts, patches, deletes, resets, or handles validation errors through Inertia, it must be wired with Inertia form helpers rather than plain React form state.
 
 # Inertia v2
 
