@@ -1,27 +1,32 @@
-import { Form } from '@inertiajs/react';
 import {
     flexRender,
     getCoreRowModel,
     useReactTable,
-} from "@tanstack/react-table"
+} from '@tanstack/react-table';
 import type {
+    Column,
     ColumnDef,
     ColumnFiltersState,
     PaginationState,
     RowSelectionState,
     SortingState,
+    Table as TanStackTable,
     VisibilityState,
-} from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, ChevronUp, LucideCog } from 'lucide-react';
-import * as React from "react"
-
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+} from '@tanstack/react-table';
 import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+    ArrowUpDown,
+    ChevronDown,
+    ChevronUp,
+    Filter,
+    Settings2,
+    X,
+} from 'lucide-react';
+import * as React from 'react';
+
+import type { DataTableFilterDef } from '@/components/data-table-filters';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -29,15 +34,23 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet';
 import {
     Table,
     TableBody,
@@ -45,138 +58,669 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table"
-
-// --- Definizioni Tipi Filtri (Identici al Client) ---
-export type DataTableFilterOption = {
-    label: string
-    value: string
-}
-
-export type DataTableFilterDef =
-    | { kind: "text"; columnId: string; label: string; placeholder?: string }
-    | { kind: "select"; columnId: string; label: string; options: DataTableFilterOption[]; clearable?: boolean; placeholder?: string }
-    | { kind: "multi"; columnId: string; label: string; options: DataTableFilterOption[] }
-    | { kind: "numberRange"; columnId: string; label: string; minPlaceholder?: string; maxPlaceholder?: string }
-    | { kind: "boolean"; columnId: string; label: string; trueLabel?: string; falseLabel?: string }
+} from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 
 export type ServerTableQuery = {
-    columnFilters: ColumnFiltersState
-    sorting: SortingState
-    pagination: PaginationState
-}
+    columnFilters: ColumnFiltersState;
+    sorting: SortingState;
+    pagination: PaginationState;
+};
 
 type ServerDataTableProps<TData, TValue> = {
-    columns: ColumnDef<TData, TValue>[]
-    data: TData[]
-    rowCount: number
-    pageCount: number
-    initialColumnFilters?: ColumnFiltersState
-    initialSorting?: SortingState
-    initialPagination?: PaginationState
-    onQueryChange: (q: ServerTableQuery) => void
-    filters?: DataTableFilterDef[]
-    showResetFilters?: boolean
-    filtersLayout?: "panel" | "inline"
-    debounceMs?: number
-    enableRowSelection?: boolean
-    enableSorting?: boolean
-    enableColumnVisibilityMenu?: boolean
-    // Nuove prop per matching con Client Table
-    onDeleteSelected?: (rows: TData[]) => void
-    deleteSelectedLabel?: string
+    columns: ColumnDef<TData, TValue>[];
+    data: TData[];
+    rowCount: number;
+    pageCount: number;
+    initialColumnFilters?: ColumnFiltersState;
+    initialSorting?: SortingState;
+    initialPagination?: PaginationState;
+    onQueryChange: (query: ServerTableQuery) => void;
+    filters?: DataTableFilterDef[];
+    showResetFilters?: boolean;
+    filtersLayout?: 'inline' | 'stacked';
+    debounceMs?: number;
+    enableRowSelection?: boolean;
+    enableSorting?: boolean;
+    enableColumnVisibilityMenu?: boolean;
+    onDeleteSelected?: (rows: TData[]) => void;
+    deleteSelectedLabel?: string;
+};
+
+type ActiveFilterChip = {
+    key: string;
+    label: string;
+    value: string;
+    clear: () => void;
+};
+
+function parseOptionalNumber(input: string): number | undefined {
+    if (input.trim() === '') {
+        return undefined;
+    }
+
+    const parsed = Number(input);
+
+    return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function getNumberRangeLabel(value: { min?: number; max?: number } | undefined): string | null {
+    if (!value) {
+        return null;
+    }
+
+    if (value.min !== undefined && value.max !== undefined) {
+        return `${value.min} - ${value.max}`;
+    }
+
+    if (value.min !== undefined) {
+        return `da ${value.min}`;
+    }
+
+    if (value.max !== undefined) {
+        return `fino a ${value.max}`;
+    }
+
+    return null;
+}
+
+function getSelectLabel(filter: Extract<DataTableFilterDef, { kind: 'select' }>, value: string): string {
+    return filter.options.find((option) => option.value === value)?.label ?? value;
+}
+
+function getMultiLabel(filter: Extract<DataTableFilterDef, { kind: 'multi' }>, selected: string[]): string | null {
+    if (selected.length === 0) {
+        return null;
+    }
+
+    const labels = filter.options
+        .filter((option) => selected.includes(option.value))
+        .map((option) => option.label);
+
+    if (labels.length <= 2) {
+        return labels.join(', ');
+    }
+
+    return `${labels.slice(0, 2).join(', ')} +${labels.length - 2}`;
+}
+
+function getFilterChip<TData>(
+    table: TanStackTable<TData>,
+    filter: DataTableFilterDef,
+): ActiveFilterChip | null {
+    const column = table.getColumn(filter.columnId);
+
+    if (!column) {
+        return null;
+    }
+
+    const clear = () => column.setFilterValue(undefined);
+
+    if (filter.kind === 'text') {
+        const value = (column.getFilterValue() as string | undefined)?.trim();
+
+        if (!value) {
+            return null;
+        }
+
+        return {
+            key: filter.columnId,
+            label: filter.label,
+            value,
+            clear,
+        };
+    }
+
+    if (filter.kind === 'select') {
+        const value = column.getFilterValue() as string | undefined;
+
+        if (!value) {
+            return null;
+        }
+
+        return {
+            key: filter.columnId,
+            label: filter.label,
+            value: getSelectLabel(filter, value),
+            clear,
+        };
+    }
+
+    if (filter.kind === 'boolean') {
+        const value = column.getFilterValue() as boolean | undefined;
+
+        if (value === undefined) {
+            return null;
+        }
+
+        return {
+            key: filter.columnId,
+            label: filter.label,
+            value: value ? (filter.trueLabel ?? 'Sì') : (filter.falseLabel ?? 'No'),
+            clear,
+        };
+    }
+
+    if (filter.kind === 'multi') {
+        const value = (column.getFilterValue() as string[] | undefined) ?? [];
+        const label = getMultiLabel(filter, value);
+
+        if (!label) {
+            return null;
+        }
+
+        return {
+            key: filter.columnId,
+            label: filter.label,
+            value: label,
+            clear,
+        };
+    }
+
+    if (filter.kind === 'numberRange') {
+        const value = column.getFilterValue() as
+            | {
+                  min?: number;
+                  max?: number;
+              }
+            | undefined;
+        const label = getNumberRangeLabel(value);
+
+        if (!label) {
+            return null;
+        }
+
+        return {
+            key: filter.columnId,
+            label: filter.label,
+            value: label,
+            clear,
+        };
+    }
+
+    return null;
+}
+
+function getDesktopFieldClassName(filter: DataTableFilterDef, filtersLayout: 'inline' | 'stacked'): string {
+    if (filtersLayout === 'stacked') {
+        return filter.kind === 'numberRange' ? 'md:col-span-2' : '';
+    }
+
+    if (filter.kind === 'text') {
+        return 'md:col-span-2';
+    }
+
+    if (filter.kind === 'numberRange') {
+        return 'xl:col-span-2';
+    }
+
+    return '';
+}
+
+function FilterField<TData>({
+    table,
+    filter,
+    className,
+}: {
+    table: TanStackTable<TData>;
+    filter: DataTableFilterDef;
+    className?: string;
+}) {
+    const column = table.getColumn(filter.columnId);
+
+    if (!column) {
+        return null;
+    }
+
+    if (filter.kind === 'text') {
+        return (
+            <div className={cn("space-y-1.5", className)}>
+                <label className="text-xs font-medium text-muted-foreground">
+                    {filter.label}
+                </label>
+                <Input
+                    placeholder={filter.placeholder ?? 'Filtra...'}
+                    value={(column.getFilterValue() as string) ?? ''}
+                    onChange={(event) => column.setFilterValue(event.target.value)}
+                />
+            </div>
+        );
+    }
+
+    if (filter.kind === 'select') {
+        const clearable = filter.clearable !== false;
+        const selectAllValue = '__all__';
+        const value = (column.getFilterValue() as string | undefined) ?? selectAllValue;
+
+        return (
+            <div className={cn("space-y-1.5", className)}>
+                <label className="text-xs font-medium text-muted-foreground">
+                    {filter.label}
+                </label>
+                <Select
+                    value={value}
+                    onValueChange={(nextValue) => {
+                        if (clearable && nextValue === selectAllValue) {
+                            column.setFilterValue(undefined);
+                            return;
+                        }
+
+                        column.setFilterValue(nextValue);
+                    }}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder={filter.placeholder ?? 'Seleziona...'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {clearable ? (
+                            <SelectItem value={selectAllValue}>Tutti</SelectItem>
+                        ) : null}
+                        {filter.options.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        );
+    }
+
+    if (filter.kind === 'boolean') {
+        const currentValue = column.getFilterValue() as boolean | undefined;
+        const value = currentValue === true ? 'true' : currentValue === false ? 'false' : 'all';
+
+        return (
+            <div className={cn("space-y-1.5", className)}>
+                <label className="text-xs font-medium text-muted-foreground">
+                    {filter.label}
+                </label>
+                <Select
+                    value={value}
+                    onValueChange={(nextValue) => {
+                        if (nextValue === 'all') {
+                            column.setFilterValue(undefined);
+                            return;
+                        }
+
+                        column.setFilterValue(nextValue === 'true');
+                    }}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Tutti" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Tutti</SelectItem>
+                        <SelectItem value="true">{filter.trueLabel ?? 'Sì'}</SelectItem>
+                        <SelectItem value="false">{filter.falseLabel ?? 'No'}</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        );
+    }
+
+    if (filter.kind === 'multi') {
+        const selected = (column.getFilterValue() as string[] | undefined) ?? [];
+        const triggerLabel = getMultiLabel(filter, selected) ?? filter.label;
+
+        return (
+            <div className={cn("space-y-1.5", className)}>
+                <label className="text-xs font-medium text-muted-foreground">
+                    {filter.label}
+                </label>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-between font-normal"
+                        >
+                            <span className="truncate">{triggerLabel}</span>
+                            <ChevronDown className="ml-2 size-4 shrink-0" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-60">
+                        <DropdownMenuItem
+                            onSelect={(event) => {
+                                event.preventDefault();
+                                column.setFilterValue(undefined);
+                            }}
+                        >
+                            Tutti
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {filter.options.map((option) => {
+                            const checked = selected.includes(option.value);
+
+                            return (
+                                <DropdownMenuCheckboxItem
+                                    key={option.value}
+                                    checked={checked}
+                                    onCheckedChange={(nextChecked) => {
+                                        const nextSelection = nextChecked
+                                            ? Array.from(new Set([...selected, option.value]))
+                                            : selected.filter((value) => value !== option.value);
+
+                                        column.setFilterValue(
+                                            nextSelection.length > 0 ? nextSelection : undefined,
+                                        );
+                                    }}
+                                    onSelect={(event) => event.preventDefault()}
+                                >
+                                    {option.label}
+                                </DropdownMenuCheckboxItem>
+                            );
+                        })}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        );
+    }
+
+    const currentValue = (column.getFilterValue() as { min?: number; max?: number } | undefined) ?? {};
+
+    return (
+        <div className={cn("space-y-1.5", className)}>
+            <label className="text-xs font-medium text-muted-foreground">
+                {filter.label}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+                <Input
+                    inputMode="numeric"
+                    placeholder={filter.minPlaceholder ?? 'Min'}
+                    value={currentValue.min ?? ''}
+                    onChange={(event) => {
+                        const nextValue = {
+                            ...currentValue,
+                            min: parseOptionalNumber(event.target.value),
+                        };
+
+                        column.setFilterValue(
+                            nextValue.min === undefined && nextValue.max === undefined
+                                ? undefined
+                                : nextValue,
+                        );
+                    }}
+                />
+                <Input
+                    inputMode="numeric"
+                    placeholder={filter.maxPlaceholder ?? 'Max'}
+                    value={currentValue.max ?? ''}
+                    onChange={(event) => {
+                        const nextValue = {
+                            ...currentValue,
+                            max: parseOptionalNumber(event.target.value),
+                        };
+
+                        column.setFilterValue(
+                            nextValue.min === undefined && nextValue.max === undefined
+                                ? undefined
+                                : nextValue,
+                        );
+                    }}
+                />
+            </div>
+        </div>
+    );
+}
+
+function FilterPanel<TData>({
+    table,
+    filters,
+    filtersLayout,
+    showResetFilters,
+    hasActiveFilters,
+    onResetFilters,
+    className,
+}: {
+    table: TanStackTable<TData>;
+    filters: DataTableFilterDef[];
+    filtersLayout: 'inline' | 'stacked';
+    showResetFilters: boolean;
+    hasActiveFilters: boolean;
+    onResetFilters: () => void;
+    className?: string;
+}) {
+    return (
+        <div
+            className={cn(
+                'rounded-xl border border-sidebar-border/70 bg-muted/20 p-4',
+                className,
+            )}
+        >
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                    <p className="text-sm font-semibold">Filtri</p>
+                    <p className="text-xs text-muted-foreground">
+                        Modifica i criteri per aggiornare subito i risultati.
+                    </p>
+                </div>
+                {showResetFilters && hasActiveFilters ? (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={onResetFilters}
+                    >
+                        Reset filtri
+                    </Button>
+                ) : null}
+            </div>
+
+            <div
+                className={cn(
+                    'grid gap-3',
+                    filtersLayout === 'stacked'
+                        ? 'md:grid-cols-2 xl:grid-cols-3'
+                        : 'md:grid-cols-2 xl:grid-cols-5',
+                )}
+            >
+                {filters.map((filter) => (
+                    <FilterField
+                        key={filter.columnId}
+                        table={table}
+                        filter={filter}
+                        className={getDesktopFieldClassName(filter, filtersLayout)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function ActiveFilterBar({
+    chips,
+    onResetFilters,
+}: {
+    chips: ActiveFilterChip[];
+    onResetFilters: () => void;
+}) {
+    if (chips.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+            {chips.map((chip) => (
+                <Badge
+                    key={chip.key}
+                    variant="outline"
+                    className="gap-2 rounded-full border-sidebar-border/80 bg-background px-3 py-1 text-xs"
+                >
+                    <span className="font-medium">{chip.label}:</span>
+                    <span className="text-muted-foreground">{chip.value}</span>
+                    <button
+                        type="button"
+                        onClick={chip.clear}
+                        className="rounded-full text-muted-foreground transition hover:text-foreground"
+                        aria-label={`Rimuovi filtro ${chip.label}`}
+                    >
+                        <X className="size-3.5" />
+                    </button>
+                </Badge>
+            ))}
+
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 rounded-full px-3 text-xs"
+                onClick={onResetFilters}
+            >
+                Rimuovi tutto
+            </Button>
+        </div>
+    );
+}
+
+function ColumnVisibilityMenu<TData>({
+    columns,
+}: {
+    columns: Column<TData, unknown>[];
+}) {
+    if (columns.length === 0) {
+        return null;
+    }
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" type="button">
+                    <Settings2 className="mr-2 size-4" />
+                    Colonne
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+                {columns.map((column) => (
+                    <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                        {column.id}
+                    </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
 }
 
 export function ServerDataTable<TData, TValue>({
-                                                   columns,
-                                                   data,
-                                                   rowCount,
-                                                   pageCount,
-                                                   initialColumnFilters,
-                                                   initialSorting,
-                                                   initialPagination,
-                                                   onQueryChange,
-                                                   filters,
-                                                   showResetFilters = true,
-                                                   filtersLayout = "panel",
-                                                   debounceMs,
-                                                   enableRowSelection = false,
-                                                   enableSorting = true,
-                                                   enableColumnVisibilityMenu = true,
-                                                   onDeleteSelected,
-                                                   deleteSelectedLabel,
-                                               }: ServerDataTableProps<TData, TValue>) {
+    columns,
+    data,
+    rowCount,
+    pageCount,
+    initialColumnFilters,
+    initialSorting,
+    initialPagination,
+    onQueryChange,
+    filters,
+    showResetFilters = true,
+    filtersLayout = 'inline',
+    debounceMs,
+    enableRowSelection = false,
+    enableSorting = true,
+    enableColumnVisibilityMenu = true,
+    onDeleteSelected,
+    deleteSelectedLabel,
+}: ServerDataTableProps<TData, TValue>) {
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+        () => initialColumnFilters ?? [],
+    );
+    const [sorting, setSorting] = React.useState<SortingState>(() => initialSorting ?? []);
+    const [pagination, setPagination] = React.useState<PaginationState>(
+        () => initialPagination ?? { pageIndex: 0, pageSize: 10 },
+    );
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+    const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+    const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false);
 
-    // --- State Management ---
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(() => initialColumnFilters ?? [])
-    const [sorting, setSorting] = React.useState<SortingState>(() => initialSorting ?? [])
-    const [pagination, setPagination] = React.useState<PaginationState>(() => initialPagination ?? { pageIndex: 0, pageSize: 10 })
-    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
-    const [filtersOpen, setFiltersOpen] = React.useState(false)
+    React.useEffect(() => {
+        if (initialColumnFilters) {
+            setColumnFilters(initialColumnFilters);
+        }
+    }, [initialColumnFilters]);
 
-    // Sync props -> state (se arrivano nuovi valori dal server/parent)
     React.useEffect(() => {
-        if (initialColumnFilters) setColumnFilters(initialColumnFilters)
-    }, [initialColumnFilters])
-    React.useEffect(() => {
-        if (initialSorting) setSorting(initialSorting)
-    }, [initialSorting])
-    React.useEffect(() => {
-        if (initialPagination) setPagination(initialPagination)
-    }, [initialPagination])
+        if (initialSorting) {
+            setSorting(initialSorting);
+        }
+    }, [initialSorting]);
 
-    // Debounce & Emit Query Change
     React.useEffect(() => {
-        const payload = { columnFilters, sorting, pagination }
+        if (initialPagination) {
+            setPagination(initialPagination);
+        }
+    }, [initialPagination]);
+
+    const query = React.useMemo(
+        () => ({
+            columnFilters,
+            sorting,
+            pagination,
+        }),
+        [columnFilters, pagination, sorting],
+    );
+
+    React.useEffect(() => {
         if (!debounceMs || debounceMs <= 0) {
-            onQueryChange(payload)
-            return
+            onQueryChange(query);
+            return;
         }
-        const t = window.setTimeout(() => onQueryChange(payload), debounceMs)
-        return () => window.clearTimeout(t)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(columnFilters), JSON.stringify(sorting), JSON.stringify(pagination)])
 
-    // --- Dynamic Columns Construction (Checkbox Injection) ---
+        const timeoutId = window.setTimeout(() => onQueryChange(query), debounceMs);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [debounceMs, onQueryChange, query]);
+
     const tableColumns = React.useMemo<ColumnDef<TData, TValue>[]>(() => {
-        const leading: ColumnDef<TData, TValue>[] = []
-
-        if (enableRowSelection) {
-            leading.push({
-                id: 'select',
-                header: ({ table }) => (
-                    <div className="flex items-center justify-center">
-                        <Checkbox
-                            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
-                            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                            aria-label="Select all"
-                        />
-                    </div>
-                ),
-                cell: ({ row }) => (
-                    <div className="flex items-center justify-center">
-                        <Checkbox
-                            checked={row.getIsSelected()}
-                            onCheckedChange={(value) => row.toggleSelected(!!value)}
-                            aria-label="Select row"
-                            onClick={(e) => e.stopPropagation()}
-                        />
-                    </div>
-                ),
-                enableSorting: false,
-                enableHiding: false,
-                size: 40,
-            })
+        if (!enableRowSelection) {
+            return columns;
         }
-        return [...leading, ...columns]
-    }, [columns, enableRowSelection])
 
-    // --- Table Instance ---
+        const selectionColumn: ColumnDef<TData, TValue> = {
+            id: 'select',
+            header: ({ table }) => (
+                <div className="flex items-center justify-center">
+                    <Checkbox
+                        checked={
+                            table.getIsAllPageRowsSelected() ||
+                            (table.getIsSomePageRowsSelected() && 'indeterminate')
+                        }
+                        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                        aria-label="Select all"
+                    />
+                </div>
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    <Checkbox
+                        checked={row.getIsSelected()}
+                        onCheckedChange={(value) => row.toggleSelected(!!value)}
+                        aria-label="Select row"
+                        onClick={(event) => event.stopPropagation()}
+                    />
+                </div>
+            ),
+            enableSorting: false,
+            enableHiding: false,
+            size: 40,
+        };
+
+        return [selectionColumn, ...columns];
+    }, [columns, enableRowSelection]);
+
     const table = useReactTable({
         data,
         columns: tableColumns,
-        state: { columnFilters, sorting, pagination, columnVisibility, rowSelection },
+        state: {
+            columnFilters,
+            sorting,
+            pagination,
+            columnVisibility,
+            rowSelection,
+        },
         manualFiltering: true,
         manualSorting: true,
         manualPagination: true,
@@ -184,396 +728,288 @@ export function ServerDataTable<TData, TValue>({
         rowCount,
         enableRowSelection,
         onColumnFiltersChange: (updater) => {
-            setColumnFilters(prev => {
-                const next = typeof updater === "function" ? updater(prev) : updater
-                setPagination(p => ({ ...p, pageIndex: 0 })) // Reset a pag 1 se filtro cambia
-                return next
-            })
+            setColumnFilters((previous) => {
+                const next = typeof updater === 'function' ? updater(previous) : updater;
+                setPagination((current) => ({ ...current, pageIndex: 0 }));
+
+                return next;
+            });
         },
         onSortingChange: (updater) => {
-            setSorting(prev => {
-                const next = typeof updater === "function" ? updater(prev) : updater
-                setPagination(p => ({ ...p, pageIndex: 0 })) // Reset a pag 1 se sort cambia
-                return next
-            })
+            setSorting((previous) => {
+                const next = typeof updater === 'function' ? updater(previous) : updater;
+                setPagination((current) => ({ ...current, pageIndex: 0 }));
+
+                return next;
+            });
         },
         onPaginationChange: setPagination,
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
         getCoreRowModel: getCoreRowModel(),
-    })
+    });
 
-    const visibleColumns = table.getAllColumns().filter(col => typeof col.accessorFn !== "undefined" && col.getCanHide())
-    const hasActiveFilters = columnFilters.length > 0
-    const deleteSelectedText = deleteSelectedLabel ?? 'Elimina selezionati'
+    const hasFilters = (filters?.length ?? 0) > 0;
+    const hasActiveFilters = columnFilters.length > 0;
+    const deleteSelectedText = deleteSelectedLabel ?? 'Elimina selezionati';
+    const selectedRowCount = Object.keys(rowSelection).length;
+    const visibleColumns = table
+        .getAllColumns()
+        .filter((column) => column.id !== 'select' && column.getCanHide());
+    const activeFilterChips = React.useMemo(
+        () =>
+            (filters ?? [])
+                .map((filter) => getFilterChip(table, filter))
+                .filter((chip): chip is ActiveFilterChip => chip !== null),
+        [filters, table],
+    );
 
-    function resetFilters() {
-        setColumnFilters([])
-        setPagination(p => ({ ...p, pageIndex: 0 }))
+    function resetFilters(): void {
+        setColumnFilters([]);
+        setPagination((current) => ({ ...current, pageIndex: 0 }));
     }
 
-    function parseOptionalNumber(input: string): number | undefined {
-        if (input.trim() === "") return undefined
-        const n = Number(input)
-        return Number.isFinite(n) ? n : undefined
+    function deleteSelectedRows(): void {
+        if (!onDeleteSelected) {
+            return;
+        }
+
+        const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
+
+        onDeleteSelected(selectedRows);
+        setRowSelection({});
     }
-
-    const filtersContent = filters?.length ? (
-        <Form
-            className="space-y-3"
-            onSubmit={(event) => event.preventDefault()}
-        >
-            <div className="grid grid-cols-2 gap-3">
-                {filters.map((f) => {
-                    const col = table.getColumn(f.columnId)
-                    if (!col) return null
-
-                    if (f.kind === 'text') {
-                        return (
-                            <div key={f.columnId} className="space-y-1">
-                                <label className="text-xs text-muted-foreground">{f.label}</label>
-                                <Input
-                                    placeholder={f.placeholder ?? 'Filtra...'}
-                                    value={(col.getFilterValue() as string) ?? ''}
-                                    onChange={(e) => col.setFilterValue(e.target.value)}
-                                />
-                            </div>
-                        )
-                    }
-                    if (f.kind === 'select') {
-                        const selectAllValue = '__all__'
-                        const value = (col.getFilterValue() as string) ?? selectAllValue
-                        const clearable = f.clearable !== false
-                        return (
-                            <div key={f.columnId} className="space-y-1">
-                                <label className="text-xs text-muted-foreground">{f.label}</label>
-                                <Select
-                                    value={value}
-                                    onValueChange={(v) => {
-                                        if (clearable && v === selectAllValue) col.setFilterValue(undefined)
-                                        else col.setFilterValue(v)
-                                    }}
-                                >
-                                    <SelectTrigger><SelectValue placeholder={f.placeholder ?? 'Seleziona...'} /></SelectTrigger>
-                                    <SelectContent>
-                                        {clearable && <SelectItem value={selectAllValue}>Tutti</SelectItem>}
-                                        {f.options.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )
-                    }
-                    if (f.kind === 'boolean') {
-                        const current = col.getFilterValue() as boolean | undefined
-                        const valStr = current === true ? 'true' : current === false ? 'false' : ''
-                        return (
-                            <div key={f.columnId} className="space-y-1">
-                                <label className="text-xs text-muted-foreground">{f.label}</label>
-                                <Select
-                                    value={valStr}
-                                    onValueChange={(v) => {
-                                        if (v === '') col.setFilterValue(undefined)
-                                        else col.setFilterValue(v === 'true')
-                                    }}
-                                >
-                                    <SelectTrigger><SelectValue placeholder="Tutti" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="">Tutti</SelectItem>
-                                        <SelectItem value="true">{f.trueLabel ?? 'Sì'}</SelectItem>
-                                        <SelectItem value="false">{f.falseLabel ?? 'No'}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )
-                    }
-                    if (f.kind === 'multi') {
-                        const selected = (col.getFilterValue() as string[]) ?? []
-                        const label = selected.length > 0 ? `${f.label} (${selected.length})` : f.label
-
-                        return (
-                            <div key={f.columnId} className="space-y-1">
-                                <label className="text-xs text-muted-foreground">{f.label}</label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full justify-between"
-                                            type="button"
-                                        >
-                                            {label}
-                                            <ChevronDown className="ml-2 size-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-56">
-                                        <DropdownMenuItem
-                                            onSelect={(e) => {
-                                                e.preventDefault()
-                                                col.setFilterValue(undefined)
-                                            }}
-                                        >
-                                            Tutti
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        {f.options.map((opt) => {
-                                            const checked = selected.includes(opt.value)
-                                            return (
-                                                <DropdownMenuCheckboxItem
-                                                    key={opt.value}
-                                                    checked={checked}
-                                                    onCheckedChange={(next) => {
-                                                        const nextSelected = next
-                                                            ? Array.from(new Set([...selected, opt.value]))
-                                                            : selected.filter((v) => v !== opt.value)
-
-                                                        col.setFilterValue(
-                                                            nextSelected.length ? nextSelected : undefined
-                                                        )
-                                                    }}
-                                                    onSelect={(e) => e.preventDefault()}
-                                                >
-                                                    {opt.label}
-                                                </DropdownMenuCheckboxItem>
-                                            )
-                                        })}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        )
-                    }
-                    if (f.kind === 'numberRange') {
-                        const current = (col.getFilterValue() as { min?: number; max?: number } | undefined) ?? {}
-
-                        return (
-                            <div key={f.columnId} className="space-y-1">
-                                <label className="text-xs text-muted-foreground">{f.label}</label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        inputMode="numeric"
-                                        placeholder={f.minPlaceholder ?? 'Min'}
-                                        value={current.min ?? ''}
-                                        onChange={(e) => {
-                                            const min = parseOptionalNumber(e.target.value)
-                                            const next = { ...current, min }
-                                            const isEmpty = next.min === undefined && next.max === undefined
-                                            col.setFilterValue(isEmpty ? undefined : next)
-                                        }}
-                                    />
-                                    <Input
-                                        inputMode="numeric"
-                                        placeholder={f.maxPlaceholder ?? 'Max'}
-                                        value={current.max ?? ''}
-                                        onChange={(e) => {
-                                            const max = parseOptionalNumber(e.target.value)
-                                            const next = { ...current, max }
-                                            const isEmpty = next.min === undefined && next.max === undefined
-                                            col.setFilterValue(isEmpty ? undefined : next)
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        )
-                    }
-
-                    return null
-                })}
-            </div>
-
-            {showResetFilters && hasActiveFilters && (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={resetFilters}
-                    type="button"
-                >
-                    Reset filtri
-                </Button>
-            )}
-        </Form>
-    ) : null
 
     return (
-        <div className="space-y-3">
-            {filters?.length ? (
-                <Collapsible
-                    open={filtersOpen}
-                    onOpenChange={setFiltersOpen}
-                    className="space-y-3"
-                >
-                    {/* Toolbar */}
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                        <div className="flex flex-1 flex-wrap items-center gap-3" />
-
-                        <div className="flex items-center gap-2 sm:ml-auto">
-                            {enableRowSelection && onDeleteSelected && (
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => {
-                                        const selectedRows = table.getSelectedRowModel().rows.map(r => r.original)
-                                        onDeleteSelected(selectedRows)
-                                        setRowSelection({})
-                                    }}
-                                    disabled={Object.keys(rowSelection).length === 0}
-                                    type="button"
-                                >
-                                    {deleteSelectedText}
-                                </Button>
-                            )}
-
-                            <CollapsibleTrigger asChild>
-                                <Button variant="outline" size="sm" type="button">
-                                    <LucideCog className="mr-2 size-4" />
-                                    Filtri{hasActiveFilters ? ` (${columnFilters.length})` : ''}
-                                    {filtersOpen ? <ChevronUp className="ml-2 size-4" /> : <ChevronDown className="ml-2 size-4" />}
-                                </Button>
-                            </CollapsibleTrigger>
-
-                            {enableColumnVisibilityMenu && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm">Colonne</Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-48">
-                                        {visibleColumns.map((column) => (
-                                            <DropdownMenuCheckboxItem
-                                                key={column.id}
-                                                className="capitalize"
-                                                checked={column.getIsVisible()}
-                                                onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                                            >
-                                                {column.id}
-                                            </DropdownMenuCheckboxItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
-
-                        </div>
-                    </div>
-
-                    <CollapsibleContent
-                        className={
-                            filtersLayout === "panel"
-                                ? "rounded-lg border border-sidebar-border/70 bg-muted/30 p-3"
-                                : "p-3"
-                        }
-                    >
-                        {filtersContent}
-                    </CollapsibleContent>
-                </Collapsible>
-            ) : (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex flex-1 flex-wrap items-center gap-3" />
-
-                    <div className="flex items-center gap-2 sm:ml-auto">
-                        {enableRowSelection && onDeleteSelected && (
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => {
-                                    const selectedRows = table.getSelectedRowModel().rows.map(r => r.original)
-                                    onDeleteSelected(selectedRows)
-                                    setRowSelection({})
-                                }}
-                                disabled={Object.keys(rowSelection).length === 0}
-                                type="button"
-                            >
-                                {deleteSelectedText}
-                            </Button>
-                        )}
-
-                        {enableColumnVisibilityMenu && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm">Colonne</Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48">
-                                    {visibleColumns.map((column) => (
-                                        <DropdownMenuCheckboxItem
-                                            key={column.id}
-                                            className="capitalize"
-                                            checked={column.getIsVisible()}
-                                            onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                                        >
-                                            {column.id}
-                                        </DropdownMenuCheckboxItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-                    </div>
+        <div className="space-y-4">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                <div className="min-w-0 flex-1 space-y-3">
+                    {hasFilters ? (
+                        <>
+                            <div className="hidden xl:block">
+                                <FilterPanel
+                                    table={table}
+                                    filters={filters ?? []}
+                                    filtersLayout={filtersLayout}
+                                    showResetFilters={showResetFilters}
+                                    hasActiveFilters={hasActiveFilters}
+                                    onResetFilters={resetFilters}
+                                />
+                            </div>
+                            <ActiveFilterBar
+                                chips={activeFilterChips}
+                                onResetFilters={resetFilters}
+                            />
+                        </>
+                    ) : null}
                 </div>
-            )}
 
-            {/* Table Body */}
+                <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+                    {enableRowSelection && onDeleteSelected ? (
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={deleteSelectedRows}
+                            disabled={selectedRowCount === 0}
+                        >
+                            {deleteSelectedText}
+                        </Button>
+                    ) : null}
+
+                    {hasFilters ? (
+                        <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+                            <SheetTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="xl:hidden"
+                                >
+                                    <Filter className="mr-2 size-4" />
+                                    Filtri
+                                    {hasActiveFilters ? ` (${activeFilterChips.length})` : ''}
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="right" className="w-full sm:max-w-lg">
+                                <SheetHeader>
+                                    <SheetTitle>Filtri tabella</SheetTitle>
+                                    <SheetDescription>
+                                        Aggiorna i criteri per restringere i risultati.
+                                    </SheetDescription>
+                                </SheetHeader>
+                                <div className="px-4 pb-4">
+                                    <FilterPanel
+                                        table={table}
+                                        filters={filters ?? []}
+                                        filtersLayout="stacked"
+                                        showResetFilters={showResetFilters}
+                                        hasActiveFilters={hasActiveFilters}
+                                        onResetFilters={resetFilters}
+                                        className="border-0 bg-transparent p-0"
+                                    />
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    ) : null}
+
+                    {enableColumnVisibilityMenu ? (
+                        <ColumnVisibilityMenu columns={visibleColumns} />
+                    ) : null}
+                </div>
+            </div>
+
             <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-background shadow-sm">
                 <Table className="text-sm">
                     <TableHeader className="bg-muted/50">
-                        {table.getHeaderGroups().map(headerGroup => (
+                        {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map(header => (
-                                    <TableHead key={header.id} className={header.column.id === 'select' ? 'w-10 px-2' : 'px-6'}>
-                                        {header.isPlaceholder ? null : enableSorting && header.column.getCanSort() ? (
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead
+                                        key={header.id}
+                                        className={
+                                            header.column.id === 'select' ? 'w-10 px-2' : 'px-6'
+                                        }
+                                    >
+                                        {header.isPlaceholder ? null : enableSorting &&
+                                          header.column.getCanSort() ? (
                                             <Button
+                                                type="button"
                                                 variant="ghost"
                                                 size="sm"
                                                 className="-ml-1 h-8 px-2 text-left"
                                                 onClick={header.column.getToggleSortingHandler()}
-                                                type="button"
                                             >
-                                                {flexRender(header.column.columnDef.header, header.getContext())}
-                                                {header.column.getIsSorted() === "asc" ? <ChevronUp className="ml-2 size-4" /> : header.column.getIsSorted() === "desc" ? <ChevronDown className="ml-2 size-4" /> : <ArrowUpDown className="ml-2 size-4" />}
+                                                {flexRender(
+                                                    header.column.columnDef.header,
+                                                    header.getContext(),
+                                                )}
+                                                {header.column.getIsSorted() === 'asc' ? (
+                                                    <ChevronUp className="ml-2 size-4" />
+                                                ) : header.column.getIsSorted() === 'desc' ? (
+                                                    <ChevronDown className="ml-2 size-4" />
+                                                ) : (
+                                                    <ArrowUpDown className="ml-2 size-4" />
+                                                )}
                                             </Button>
-                                        ) : flexRender(header.column.columnDef.header, header.getContext())}
+                                        ) : (
+                                            flexRender(
+                                                header.column.columnDef.header,
+                                                header.getContext(),
+                                            )
+                                        )}
                                     </TableHead>
                                 ))}
                             </TableRow>
                         ))}
                     </TableHeader>
                     <TableBody>
-                        {table.getRowModel().rows.length ? (
-                            table.getRowModel().rows.map(row => (
-                                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                                    {row.getVisibleCells().map(cell => (
-                                        <TableCell key={cell.id} className={cell.column.id === 'select' ? 'w-10 px-2 text-center' : 'px-6 py-4'}>
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {table.getRowModel().rows.length > 0 ? (
+                            table.getRowModel().rows.map((row) => (
+                                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                                    {row.getVisibleCells().map((cell) => (
+                                        <TableCell
+                                            key={cell.id}
+                                            className={
+                                                cell.column.id === 'select'
+                                                    ? 'w-10 px-2 text-center'
+                                                    : 'px-6 py-4'
+                                            }
+                                        >
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext(),
+                                            )}
                                         </TableCell>
                                     ))}
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={tableColumns.length} className="px-6 py-8 text-center text-muted-foreground">Nessun risultato.</TableCell>
+                                <TableCell
+                                    colSpan={tableColumns.length}
+                                    className="px-6 py-10 text-center"
+                                >
+                                    <div className="space-y-1">
+                                        <p className="font-medium">Nessun risultato</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Prova a cambiare i filtri o a ripristinare la ricerca.
+                                        </p>
+                                    </div>
+                                </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                 </Table>
 
-                {/* Pagination Controls */}
-                <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex flex-col gap-3 border-t border-sidebar-border/70 px-4 py-3 md:flex-row md:items-center md:justify-between">
                     <div className="text-sm text-muted-foreground">
-                        {enableRowSelection ? `${Object.keys(rowSelection).length} selezionate` : `${rowCount} totali`}
+                        {enableRowSelection
+                            ? `${selectedRowCount} selezionate su ${rowCount}`
+                            : `${rowCount} risultati totali`}
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">Righe</span>
                             <Select
                                 value={String(pagination.pageSize)}
-                                onValueChange={(v) => setPagination({ pageIndex: 0, pageSize: Number(v) })}
+                                onValueChange={(value) =>
+                                    setPagination({ pageIndex: 0, pageSize: Number(value) })
+                                }
                             >
-                                <SelectTrigger className="w-[90px]"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="w-[96px]">
+                                    <SelectValue />
+                                </SelectTrigger>
                                 <SelectContent>
-                                    {[5, 10, 20, 50, 100].map(size => <SelectItem key={size} value={String(size)}>{size}</SelectItem>)}
+                                    {[5, 10, 20, 50, 100].map((size) => (
+                                        <SelectItem key={size} value={String(size)}>
+                                            {size}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="text-sm text-muted-foreground">Pagina {pagination.pageIndex + 1} di {pageCount}</div>
-                        <Button variant="outline" size="sm" onClick={() => setPagination(p => ({ ...p, pageIndex: Math.max(0, p.pageIndex - 1) }))} disabled={!table.getCanPreviousPage()}>Precedente</Button>
-                        <Button variant="outline" size="sm" onClick={() => setPagination(p => ({ ...p, pageIndex: Math.min(pageCount - 1, p.pageIndex + 1) }))} disabled={!table.getCanNextPage()}>Successiva</Button>
+
+                        <div className="text-sm text-muted-foreground">
+                            Pagina {pagination.pageIndex + 1} di {pageCount}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    setPagination((current) => ({
+                                        ...current,
+                                        pageIndex: Math.max(0, current.pageIndex - 1),
+                                    }))
+                                }
+                                disabled={!table.getCanPreviousPage()}
+                            >
+                                Precedente
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    setPagination((current) => ({
+                                        ...current,
+                                        pageIndex: Math.min(pageCount - 1, current.pageIndex + 1),
+                                    }))
+                                }
+                                disabled={!table.getCanNextPage()}
+                            >
+                                Successiva
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    )
+    );
 }
-export { ColumnFiltersState, PaginationState, SortingState };
+
+export type { ColumnFiltersState, PaginationState, SortingState };

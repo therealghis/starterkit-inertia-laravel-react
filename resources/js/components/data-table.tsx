@@ -36,6 +36,10 @@ import type {
 import { ArrowUpDown, ChevronDown, ChevronUp, GripVertical } from "lucide-react"
 import * as React from "react"
 
+import type {
+    DataTableFilterDef,
+    DataTableFilterOption,
+} from "@/components/data-table-filters"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -62,47 +66,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-
-export type DataTableFilterOption = {
-    label: string
-    value: string
-}
-
-export type DataTableFilterDef =
-    | {
-    kind: "text"
-    columnId: string
-    label: string
-    placeholder?: string
-}
-    | {
-    kind: "select"
-    columnId: string
-    label: string
-    options: DataTableFilterOption[]
-    clearable?: boolean
-    placeholder?: string
-}
-    | {
-    kind: "multi"
-    columnId: string
-    label: string
-    options: DataTableFilterOption[]
-}
-    | {
-    kind: "numberRange"
-    columnId: string
-    label: string
-    minPlaceholder?: string
-    maxPlaceholder?: string
-}
-    | {
-    kind: "boolean"
-    columnId: string
-    label: string
-    trueLabel?: string
-    falseLabel?: string
-}
 
 /**
  * Reusable filterFn: expects filter value as { min?: number; max?: number }.
@@ -1031,3 +994,5 @@ export function DataTable<TData, TValue>({
         </div>
     );
 }
+
+export type { DataTableFilterDef, DataTableFilterOption }
