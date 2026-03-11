@@ -5,7 +5,10 @@ use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,5 +26,23 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->respond(function (Response $response, \Throwable $exception, Request $request) {
+            $status = $response->getStatusCode();
+
+            if ($status === 419) {
+                return back()->with('flash.error', 'La sessione e` scaduta. Riprova.');
+            }
+
+            if (! in_array($status, [403, 404, 429, 500, 503], true)) {
+                return $response;
+            }
+
+            if ($status === 500 && app()->environment('local')) {
+                return $response;
+            }
+
+            return Inertia::render('error-page', [
+                'status' => $status,
+            ])->toResponse($request)->setStatusCode($status);
+        });
     })->create();
