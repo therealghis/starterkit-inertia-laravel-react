@@ -4,9 +4,11 @@ import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileCo
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslations } from '@/hooks/use-translations';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/profile';
@@ -28,6 +30,7 @@ export default function Profile({
     status?: string;
 }) {
     const { auth } = usePage().props;
+    const { t } = useTranslations();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -141,6 +144,20 @@ export default function Profile({
                             </>
                         )}
                     </Form>
+                </div>
+
+                <div className="space-y-6">
+                    <Heading
+                        variant="small"
+                        title={t('Language')}
+                        description={t(
+                            'Choose the language used by the application interface.',
+                        )}
+                    />
+
+                    <div className="rounded-lg border border-sidebar-border/70 p-4">
+                        <LanguageSwitcher />
+                    </div>
                 </div>
 
                 <DeleteUser />
