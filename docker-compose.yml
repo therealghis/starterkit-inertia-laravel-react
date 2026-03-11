@@ -1,6 +1,6 @@
 services:
     laravel.test:
-        image: 'endpoint:5050/directory/project-slug/backend'
+        image: '${REGISTRY_HOST:-gitlab.example.com:5050}/${REGISTRY_PROJECT_PATH:-group-or-user/project-slug}/backend:${APP_IMAGE_TAG:-latest}'
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         ports:
@@ -18,7 +18,7 @@ services:
         depends_on:
             - mysql
     mysql:
-        image: 'endpoint:5050/directory/project-slug/db'
+        image: '${REGISTRY_HOST:-gitlab.example.com:5050}/${REGISTRY_PROJECT_PATH:-group-or-user/project-slug}/db:${DB_IMAGE_TAG:-latest}'
         ports:
             - '${FORWARD_DB_PORT:-3306}:3306'
         environment:

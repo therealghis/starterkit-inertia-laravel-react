@@ -11,7 +11,11 @@
 - creare l'applicazione tramite starter kit a partire da progetto deploy script
 - portarsi nel progetto creato
 - verificare che la cartella "docker" contenga le corrette configurazione e cancellare le eventuali versioni non utilizzate
-- modificare i file docker-compose.build.yml e docker-compose.yml con i corretti endpoint del container registry
+- configurare i placeholder del container registry nei compose oppure nel file `.env`
+    - `REGISTRY_HOST=gitlab.example.com:5050` per GitLab self-hosted, oppure `REGISTRY_HOST=registry.gitlab.com` per GitLab.com
+    - `REGISTRY_PROJECT_PATH=group-or-user/project-slug`
+    - `APP_IMAGE_TAG=latest`
+    - `DB_IMAGE_TAG=latest`
 - creare il file .env copiando il .env.example e modificandolo opportunamente
 - avviare docker deskop (se WSL), oppure avviare il servizio docker a sistema (se VM, ma di solito non è necessario)
 - `docker compose -f docker-compose.build.yml build --no-cache` -> costruisce un'immagine in locale
@@ -24,9 +28,10 @@
 - aggiungere al file .bashrc (o equivalente) un alias per sail: `alias sail='[ -f sail ] && sh sail || sh vendor/bin/sail'`
 - `sail up -d` -> avvia i container in locale
 - verificare che sia tutto ok e che l'applicativo sia raggiungibile all'url
-- `docker login -u {username_gitlab} -p {gitlab_token} endpoint:5050`
+- `docker login -u {username_gitlab} -p {gitlab_token} {REGISTRY_HOST}`
     - il token deve essere un token di accesso personale con permessi di lettura e scrittura sui container registry
-    - creare il token su Gitlab con permessi `read_registry`, se non esiste già. https://endpoint/-/user_settings/personal_access_tokens
+    - per fare anche il push servono i permessi `read_registry` e `write_registry`
+    - creare il token su Gitlab, se non esiste già. https://{gitlab-host}/-/user_settings/personal_access_tokens
     - NON serve farlo se si è già stato fatto in passato verso quel server
 - `docker compose -f docker-compose.build.yml push` -> fa il push sul container registry dell'immagine costruita in locale
 - modificare file hosts (solo per VM, no WSL)
@@ -36,16 +41,24 @@
 - git clone
 - creare il file `.env` copiando il `.env.example` e modificandolo opportunamente
     - porta web e database, APP_URL compreso
+- configurare i placeholder del container registry nel file `.env` se diversi dai default dei compose
+    - `REGISTRY_HOST=gitlab.example.com:5050` oppure `registry.gitlab.com`
+    - `REGISTRY_PROJECT_PATH=group-or-user/project-slug`
+    - `APP_IMAGE_TAG=latest`
+    - `DB_IMAGE_TAG=latest`
 - `./docker/8.4/project-installer/install-laravel-project.sh`
     - installa i vendor la prima volta - necessario per poi usare vendor/bin/sail
     - genera una nuova chiave app con artisan
     - genera il symlink con storage:link
-- `docker login -u {username_gitlab} -p {gitlab_token} endpoint:5050`
+- `docker login -u {username_gitlab} -p {gitlab_token} {REGISTRY_HOST}`
     - il token deve essere un token di accesso personale con permessi di lettura e scrittura sui container registry
-    - creare il token su Gitlab con permessi `read_registry`, se non esiste già. https://endpoint/-/user_settings/personal_access_tokens
+    - per scaricare basta `read_registry`; per build + push servono anche `write_registry`
+    - creare il token su Gitlab, se non esiste già. https://{gitlab-host}/-/user_settings/personal_access_tokens
     - NON serve farlo se si è già stato fatto in passato verso quel server
 - `sail up -d`
-    - sail scarica l'immagine dal container registry (se presente), altrimenti la costruisce
+    - sail usa `docker compose` sul `docker-compose.yml`
+    - con questo file prova a scaricare le immagini dal container registry
+    - se le immagini non esistono, non costruisce nulla in automatico: per costruirle usare `docker compose -f docker-compose.build.yml build`
 - modificare file hosts (solo per VM, no WSL)
     - `{ip-VM} {app-complete-domain}`
 
