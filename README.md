@@ -143,7 +143,7 @@
 
 # Utils
 - Monitoring e bug tracking (solo local): `http://APP_URL/telescope`
-- Analisi statica - Larastan: `sail php ./vendor/bin/phpstan analyse >> logs/larastan_$(date +'%Y-%m-%d_%H-%M-%S').txt`
+- Analisi statica - Larastan: `sail php ./vendor/bin/phpstan analyse >> storage/logs/larastan_$(date +'%Y-%m-%d_%H-%M-%S').txt`
 - Code style - Pint: `sail php ./vendor/bin/pint --dirty --format agent`
 - Generazione route frontend - Wayfinder: `php artisan wayfinder:generate --with-form --no-interaction`
 - Type check frontend: `npm run types:check`
