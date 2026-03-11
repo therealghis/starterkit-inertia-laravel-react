@@ -6,10 +6,7 @@ use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
-use Inertia\Inertia;
-use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -28,23 +25,33 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->respond(function (Response $response, \Throwable $exception, Request $request) {
-            $status = $response->getStatusCode();
+        // Custom Inertia error pages are currently disabled on purpose.
+        // In local development we want Laravel's default error handling so
+        // unexpected exceptions remain fully visible.
+        //
+        // To re-enable the custom error page flow, restore a respond() handler
+        // here and route statuses like 403/404/429/500/503 to
+        // resources/js/pages/error-page.tsx.
+        //es.
+        //
+        // $exceptions->respond(function (Response $response, \Throwable $exception, Request $request) {
+        //            $status = $response->getStatusCode();
+        //
+        //            if ($status === 419) {
+        //                return back()->with('flash.error', 'La sessione e` scaduta. Riprova.');
+        //            }
+        //
+        //            if (! in_array($status, [403, 404, 409, 429, 500, 503], true)) {
+        //                return $response;
+        //            }
+        //
+        //            if ($status === 500 && app()->environment('local')) {
+        //                return $response;
+        //            }
+        //
+        //            return Inertia::render('error-page', [
+        //                'status' => $status,
+        //            ])->toResponse($request)->setStatusCode($status);
+        //        });
 
-            if ($status === 419) {
-                return back()->with('flash.error', 'La sessione e` scaduta. Riprova.');
-            }
-
-            if (! in_array($status, [403, 404, 409, 429, 500, 503], true)) {
-                return $response;
-            }
-
-            if ($status === 500 && app()->environment('local')) {
-                return $response;
-            }
-
-            return Inertia::render('error-page', [
-                'status' => $status,
-            ])->toResponse($request)->setStatusCode($status);
-        });
     })->create();
