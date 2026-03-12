@@ -75,6 +75,7 @@
 
 # Primo avvio
 - `sail artisan migrate`
+- `sail artisan migrate --database=trivy_reports`
 - `sail artisan db:seed`
     - il seeder base crea o aggiorna un utente iniziale leggendo:
         - `STARTER_USER_NAME`
@@ -98,6 +99,7 @@
 # Avvii successivi
 - `sail up -d`
 - `sail artisan migrate`
+- `sail artisan migrate --database=trivy_reports`
 - `sail artisan optimize:clear`
 - `nvm use 24`
 - `yarn`
@@ -179,6 +181,11 @@
 
 - nota:
     - la parte produzione non e` ancora inclusa e verra` gestita separatamente
+    - e` disponibile una connessione MySQL dedicata `trivy_reports` per l'evoluzione successiva della persistenza report
+    - il database `trivy_reports` viene creato dal container MySQL in bootstrap, nello stesso punto in cui il progetto crea gia` il database `testing`
+    - la migration iniziale del database secondario usa la connessione configurata in `config/trivy.php`
+    - in locale con Sail la connessione secondaria usa `TRIVY_REPORTS_DB_HOST=mysql`
+    - per eseguire le migration sul database secondario: `sail artisan migrate --database=trivy_reports`
 
 # Implementazione
 

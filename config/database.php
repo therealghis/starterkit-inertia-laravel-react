@@ -64,6 +64,26 @@ return [
             ]) : [],
         ],
 
+        'trivy_reports' => [
+            'driver' => 'mysql',
+            'url' => env('TRIVY_REPORTS_DB_URL'),
+            'host' => env('TRIVY_REPORTS_DB_HOST', 'mysql'),
+            'port' => env('TRIVY_REPORTS_DB_PORT', '3306'),
+            'database' => env('TRIVY_REPORTS_DB_DATABASE', 'trivy_reports'),
+            'username' => env('TRIVY_REPORTS_DB_USERNAME', 'sail'),
+            'password' => env('TRIVY_REPORTS_DB_PASSWORD', 'password'),
+            'unix_socket' => env('TRIVY_REPORTS_DB_SOCKET', ''),
+            'charset' => env('TRIVY_REPORTS_DB_CHARSET', 'utf8mb4'),
+            'collation' => env('TRIVY_REPORTS_DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('TRIVY_REPORTS_MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

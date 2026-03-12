@@ -26,6 +26,7 @@
         "ext-tokenizer": "*",
         "ext-xml": "*",
         "ext-xmlwriter": "*",
+        "ext-pdo": "*",
         "lib-pcre": "*",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/fortify": "^1.30",
