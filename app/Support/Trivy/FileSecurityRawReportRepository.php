@@ -9,12 +9,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class FileSecurityRawReportRepository implements SecurityRawReportRepositoryInterface {
-    public function discoverGeneratedReports(): array {
-        return $this->jsonReportPaths(
-            Storage::disk($this->disk())->files($this->directory()),
-        );
-    }
-
     public function existingReportPaths(array $paths): array {
         $disk = Storage::disk($this->disk());
         $existingPaths = [];
@@ -41,8 +35,9 @@ class FileSecurityRawReportRepository implements SecurityRawReportRepositoryInte
             ];
         }
 
-        $scan->raw_report_paths = $metadata;
-        $scan->saveOrFail();
+        $scan->updateOrFail([
+            'raw_report_paths' => $metadata,
+        ]);
 
         return $scan;
     }
@@ -96,8 +91,6 @@ class FileSecurityRawReportRepository implements SecurityRawReportRepositoryInte
 
             $reportPaths[] = $path;
         }
-
-        sort($reportPaths);
 
         return array_values(array_unique($reportPaths));
     }

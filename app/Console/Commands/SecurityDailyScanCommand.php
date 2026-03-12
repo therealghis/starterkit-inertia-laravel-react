@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Trivy\SecurityScan;
+use App\Support\Trivy\Dto\SecurityScanExecutionResult;
 use App\Support\Trivy\Enums\SecurityScanStatus;
 use App\Support\Trivy\Inteface\SecurityRawReportRepositoryInterface;
 use App\Support\Trivy\SecurityScanRunnerService;
@@ -41,44 +42,55 @@ class SecurityDailyScanCommand extends Command {
             $rawReportRepository->storeReportPaths($scan, $result->generatedReportPaths);
         }
 
-        if (! $result->successful) {
-            $errorMessage = $result->failureReason;
-
-            if ($errorMessage === null || $errorMessage == self::GENERIC_TRIVY_FAILURE_MESSAGE) {
-                $errorMessage = trim($result->stderr) !== ''
-                    ? trim($result->stderr)
-                    : trim($result->stdout);
-            }
-
-            $scan->status = SecurityScanStatus::Failed;
-            $scan->finished_at = Date::now();
-            $scan->error_message = $errorMessage;
-            $scan->saveOrFail();
-
-            Log::error('Security daily scan failed.', [
-                'scan_id' => $scan->id,
-                'scan_key' => $scan->scan_key,
-                'scan_mode' => $scan->scan_mode,
-                'exit_code' => $result->exitCode,
-                'failure_reason' => $result->failureReason,
-                'stderr' => $result->stderr,
+        if ($result->successful) {
+            $scan->updateOrFail([
+                'status' => SecurityScanStatus::Completed,
+                'finished_at' => Date::now(),
+                'error_message' => null,
             ]);
 
-            $this->error('Security daily scan failed.');
-            if ($errorMessage !== null && $errorMessage !== '') {
-                $this->line($errorMessage);
-            }
+            $this->info('Security daily scan completed.');
 
-            return SymfonyCommand::FAILURE;
+            return SymfonyCommand::SUCCESS;
         }
 
-        $scan->status = SecurityScanStatus::Completed;
-        $scan->finished_at = Date::now();
-        $scan->error_message = null;
-        $scan->saveOrFail();
+        $errorMessage = $this->errorMessage($result);
 
-        $this->info('Security daily scan completed.');
+        $scan->updateOrFail([
+            'status' => SecurityScanStatus::Failed,
+            'finished_at' => Date::now(),
+            'error_message' => $errorMessage,
+        ]);
 
-        return SymfonyCommand::SUCCESS;
+        Log::error('Security daily scan failed.', [
+            'scan_id' => $scan->id,
+            'scan_key' => $scan->scan_key,
+            'scan_mode' => $scan->scan_mode,
+            'exit_code' => $result->exitCode,
+            'failure_reason' => $result->failureReason,
+            'stderr' => $result->stderr,
+        ]);
+
+        $this->error('Security daily scan failed.');
+
+        if ($errorMessage !== '') {
+            $this->line($errorMessage);
+        }
+
+        return SymfonyCommand::FAILURE;
+    }
+
+    private function errorMessage(SecurityScanExecutionResult $result): string {
+        if ($result->failureReason !== null && $result->failureReason !== self::GENERIC_TRIVY_FAILURE_MESSAGE) {
+            return $result->failureReason;
+        }
+
+        $errorOutput = trim($result->stderr);
+
+        if ($errorOutput !== '') {
+            return $errorOutput;
+        }
+
+        return trim($result->stdout);
     }
 }
