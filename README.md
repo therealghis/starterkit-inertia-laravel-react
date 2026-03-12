@@ -133,13 +133,6 @@
 - questo significa che:
     - il reporting delle eccezioni passa da Kraken
     - la presentazione UI degli errori HTTP e` gestita in `bootstrap/app.php`
-    - per gli status principali viene renderizzata la pagina Inertia `resources/js/pages/error-page.tsx`
-- status gestiti con pagina dedicata:
-    - `403`
-    - `404`
-    - `429`
-    - `500`
-    - `503`
 
 # Utils
 - Monitoring e bug tracking (solo local): `http://APP_URL/telescope`
