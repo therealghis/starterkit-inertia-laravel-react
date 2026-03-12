@@ -149,52 +149,34 @@
     - `* * * * * cd /percorso/progetto && php artisan schedule:run >> /dev/null 2>&1`
 
 ## Trivy in locale
-- Trivy e` configurato solo per l'ambiente locale
-- il binario `trivy` e` installato dentro il container `laravel.test`
-- non installa binari sull'host
-- non usa un servizio Docker dedicato ne` `docker.sock` dentro `laravel.test`
+- Trivy gira dentro il container `laravel.test`
 - il wrapper del progetto e` `docker/trivy/scan.sh`
-- puo` essere eseguito da host come `./docker/trivy/scan.sh` o `bash docker/trivy/scan.sh`
-- da host il wrapper entra in `laravel.test`; se viene lanciato gia` dentro `laravel.test` esegue `trivy` direttamente nello stesso container
-- il comando applicativo `sail artisan security:daily-scan` usa lo stesso wrapper senza richiedere Docker dentro `laravel.test`
-- il flag `--report-json` salva il report in `storage/app/trivy-reports`
-- il backend salva e legge i report usando il disk Laravel dedicato `trivy_reports`, con root `storage/app`
+- da host puoi lanciarlo normalmente; il wrapper entra da solo nel container corretto
+- non usa `docker.sock` dentro `laravel.test`
+- i report JSON vengono salvati in `storage/app/trivy-reports`
 
-- comandi disponibili:
-    - filesystem del progetto: `./docker/trivy/scan.sh fs`
-    - filesystem del progetto: `bash docker/trivy/scan.sh fs`
-    - misconfiguration/config: `./docker/trivy/scan.sh config`
-    - misconfiguration/config: `bash docker/trivy/scan.sh config`
-    - scansione completa con Dockerfile inclusi: `./docker/trivy/scan.sh all`
-    - scansione completa con Dockerfile inclusi: `bash docker/trivy/scan.sh all`
-    - scansione completa senza Dockerfile: `./docker/trivy/scan.sh all-without-dockerfiles`
-    - scansione completa senza Dockerfile: `bash docker/trivy/scan.sh all-without-dockerfiles`
-    - filesystem con report JSON: `./docker/trivy/scan.sh --report-json fs`
-    - scansione completa con report JSON: `./docker/trivy/scan.sh --report-json all`
+- comandi principali:
+    - scansione filesystem: `./docker/trivy/scan.sh fs`
+    - scansione config/misconfiguration: `./docker/trivy/scan.sh config`
+    - scansione completa consigliata in locale: `./docker/trivy/scan.sh all-without-dockerfiles`
+    - scansione completa con report JSON: `./docker/trivy/scan.sh --report-json all-without-dockerfiles`
+    - comando applicativo Laravel: `sail artisan security:daily-scan`
 
-- configurazione attuale:
-    - `all` include i `Dockerfile` del repository
-    - tutte le scansioni filesystem escludono la directory runtime `data/` usata dal MySQL locale
-    - `all-without-dockerfiles` esclude i `Dockerfile` del repository sotto `docker/`
-    - `all-without-dockerfiles` esclude anche Laravel Sail vendorizzato sotto `vendor/laravel/sail`
-    - `all-without-dockerfiles` nel passaggio `fs` usa solo gli scanner `vuln` e `misconfig`, senza `secret`
-    - viene usata una cache persistente dedicata a Trivy montata in `laravel.test`
-    - con `--report-json` i file vengono salvati in `storage/app/trivy-reports` con timestamp nel nome
-    - per i comandi composti (`all`, `all-with-dockerfiles`, `all-without-dockerfiles`) vengono generati file distinti per `fs` e `config`
+- comportamento:
+    - `all-without-dockerfiles` e` la modalita` di default usata anche dal comando Laravel
+    - esclude i Dockerfile del repository
+    - esclude `vendor/laravel/sail`
+    - esclude la directory `data/` usata dal MySQL locale
+    - nel passaggio `fs` usa gli scanner `vuln` e `misconfig`
+
+- output atteso:
+    - se usi `--report-json`, trovi i file in `storage/app/trivy-reports`
+    - `sail artisan security:daily-scan` crea una scan applicativa e collega i report generati
 
 - opzioni extra:
-    - e` possibile passare opzioni Trivy in coda al comando
+    - puoi passare opzioni Trivy in coda
     - esempio: `./docker/trivy/scan.sh fs --severity HIGH,CRITICAL`
-    - esempio: `bash docker/trivy/scan.sh fs --severity HIGH,CRITICAL`
-    - esempio con prefisso file deterministico: `./docker/trivy/scan.sh --report-json --report-prefix manual-test fs`
-    - esempio tramite comando applicativo: `sail artisan security:daily-scan`
-
-- nota:
-    - la parte produzione non e` ancora inclusa e verra` gestita separatamente
-    - e` disponibile una connessione MySQL dedicata `trivy_reports` per l'evoluzione successiva della persistenza report
-    - il database `trivy_reports` viene creato dal container MySQL in bootstrap, nello stesso punto in cui il progetto crea gia` il database `testing`
-    - la migration iniziale del database secondario usa la connessione configurata in `config/trivy.php`
-    - in locale con Sail la connessione secondaria usa `TRIVY_REPORTS_DB_HOST=mysql`
+    - esempio con nome file deterministico: `./docker/trivy/scan.sh --report-json --report-prefix manual-test fs`
 
 # Implementazione
 
