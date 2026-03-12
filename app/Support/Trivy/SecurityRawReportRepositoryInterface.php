@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Support\Trivy;
+
+use App\Models\Trivy\SecurityScan;
+
+interface SecurityRawReportRepositoryInterface {
+    public function discoverGeneratedReports(): array;
+
+    public function storeReportPaths(SecurityScan $scan, array $reportPaths): SecurityScan;
+
+    public function readReport(string $path): array;
+
+    public function reportsForScan(SecurityScan $scan): array;
+}
