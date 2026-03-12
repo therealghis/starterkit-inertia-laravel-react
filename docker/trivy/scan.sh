@@ -60,6 +60,7 @@ run_trivy() {
     fi
 
     docker run --rm \
+        --user "$(id -u):$(id -g)" \
         -v "${PROJECT_ROOT}:/workdir" \
         -v "${TRIVY_CACHE_VOLUME}:/root/.cache/trivy" \
         -w /workdir \
