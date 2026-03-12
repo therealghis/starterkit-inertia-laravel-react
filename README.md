@@ -142,6 +142,12 @@
 - Type check frontend: `npm run types:check`
 - Test - PHPUnit: `sail artisan test`
 
+## Scheduler Laravel
+- lo scheduler Laravel esegue `security:daily-scan` ogni giorno alle `02:00`
+- il job usa `withoutOverlapping()` per evitare esecuzioni concorrenti
+- cron Laravel standard:
+    - `* * * * * cd /percorso/progetto && php artisan schedule:run >> /dev/null 2>&1`
+
 ## Trivy in locale
 - Trivy e` configurato solo per l'ambiente locale
 - il binario `trivy` e` installato dentro il container `laravel.test`
