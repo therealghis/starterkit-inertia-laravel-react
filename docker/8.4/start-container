@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
-if [ ! -z "$WWWUSER" ]; then
-    usermod -u $WWWUSER sail
+if [ -n "$WWWUSER" ]; then
+    usermod -u "$WWWUSER" sail
+fi
+
+if [ -n "$WWWGROUP" ]; then
+    groupmod -o -g "$WWWGROUP" sail
 fi
 
 if [ ! -d /.composer ]; then

@@ -75,7 +75,6 @@
 
 # Primo avvio
 - `sail artisan migrate`
-- `sail artisan migrate --database=trivy_reports`
 - `sail artisan db:seed`
     - il seeder base crea o aggiorna un utente iniziale leggendo:
         - `STARTER_USER_NAME`
@@ -99,7 +98,6 @@
 # Avvii successivi
 - `sail up -d`
 - `sail artisan migrate`
-- `sail artisan migrate --database=trivy_reports`
 - `sail artisan optimize:clear`
 - `nvm use 24`
 - `yarn`
@@ -146,11 +144,13 @@
 
 ## Trivy in locale
 - Trivy e` configurato solo per l'ambiente locale
-- usa l'immagine Docker ufficiale `aquasec/trivy`
+- il binario `trivy` e` installato dentro il container `laravel.test`
 - non installa binari sull'host
-- non modifica i container applicativi usati da Sail
+- non usa un servizio Docker dedicato ne` `docker.sock` dentro `laravel.test`
 - il wrapper del progetto e` `docker/trivy/scan.sh`
-- puo` essere eseguito sia come `./docker/trivy/scan.sh` sia come `bash docker/trivy/scan.sh`
+- puo` essere eseguito da host come `./docker/trivy/scan.sh` o `bash docker/trivy/scan.sh`
+- da host il wrapper entra in `laravel.test`; se viene lanciato gia` dentro `laravel.test` esegue `trivy` direttamente nello stesso container
+- il comando applicativo `sail artisan security:daily-scan` usa lo stesso wrapper senza richiedere Docker dentro `laravel.test`
 - il flag `--report-json` salva il report in `storage/app/trivy-reports`
 
 - comandi disponibili:
@@ -167,10 +167,11 @@
 
 - configurazione attuale:
     - `all` include i `Dockerfile` del repository
+    - tutte le scansioni filesystem escludono la directory runtime `data/` usata dal MySQL locale
     - `all-without-dockerfiles` esclude i `Dockerfile` del repository sotto `docker/`
     - `all-without-dockerfiles` esclude anche Laravel Sail vendorizzato sotto `vendor/laravel/sail`
     - `all-without-dockerfiles` nel passaggio `fs` usa solo gli scanner `vuln` e `misconfig`, senza `secret`
-    - viene usata una cache Docker persistente dedicata a Trivy
+    - viene usata una cache persistente dedicata a Trivy montata in `laravel.test`
     - con `--report-json` i file vengono salvati in `storage/app/trivy-reports` con timestamp nel nome
     - per i comandi composti (`all`, `all-with-dockerfiles`, `all-without-dockerfiles`) vengono generati file distinti per `fs` e `config`
 
@@ -178,6 +179,7 @@
     - e` possibile passare opzioni Trivy in coda al comando
     - esempio: `./docker/trivy/scan.sh fs --severity HIGH,CRITICAL`
     - esempio: `bash docker/trivy/scan.sh fs --severity HIGH,CRITICAL`
+    - esempio tramite comando applicativo: `sail artisan security:daily-scan`
 
 - nota:
     - la parte produzione non e` ancora inclusa e verra` gestita separatamente
@@ -185,7 +187,6 @@
     - il database `trivy_reports` viene creato dal container MySQL in bootstrap, nello stesso punto in cui il progetto crea gia` il database `testing`
     - la migration iniziale del database secondario usa la connessione configurata in `config/trivy.php`
     - in locale con Sail la connessione secondaria usa `TRIVY_REPORTS_DB_HOST=mysql`
-    - per eseguire le migration sul database secondario: `sail artisan migrate --database=trivy_reports`
 
 # Implementazione
 

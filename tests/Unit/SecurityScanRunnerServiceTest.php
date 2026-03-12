@@ -5,7 +5,6 @@ namespace Tests\Unit;
 use App\Models\Trivy\SecurityScan;
 use App\Support\Trivy\Inteface\SecurityRawReportRepositoryInterface;
 use App\Support\Trivy\SecurityScanRunnerService;
-use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Process;
 use Tests\TestCase;
 
@@ -55,7 +54,7 @@ class SecurityScanRunnerServiceTest extends TestCase {
         $service = new SecurityScanRunnerService($repository);
         $result = $service->run();
 
-        Process::assertRan(function (PendingProcess $process) {
+        Process::assertRan(function (object $process) {
             return $process->command == [
                 'bash',
                 './docker/trivy/scan.sh',
@@ -67,7 +66,7 @@ class SecurityScanRunnerServiceTest extends TestCase {
         $this->assertTrue($result->successful);
         $this->assertSame(0, $result->exitCode);
         $this->assertSame('all-without-dockerfiles', $result->scanMode);
-        $this->assertSame([
+        $this->assertEqualsCanonicalizing([
             'trivy-reports/new-config.json',
             'trivy-reports/new-fs.json',
         ], $result->generatedReportPaths);
