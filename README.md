@@ -149,6 +149,44 @@
 - Type check frontend: `npm run types:check`
 - Test - PHPUnit: `sail artisan test`
 
+## Trivy in locale
+- Trivy e` configurato solo per l'ambiente locale
+- usa l'immagine Docker ufficiale `aquasec/trivy`
+- non installa binari sull'host
+- non modifica i container applicativi usati da Sail
+- il wrapper del progetto e` `docker/trivy/scan.sh`
+- puo` essere eseguito sia come `./docker/trivy/scan.sh` sia come `bash docker/trivy/scan.sh`
+- il flag `--report-json` salva il report in `storage/app/trivy-reports`
+
+- comandi disponibili:
+    - filesystem del progetto: `./docker/trivy/scan.sh fs`
+    - filesystem del progetto: `bash docker/trivy/scan.sh fs`
+    - misconfiguration/config: `./docker/trivy/scan.sh config`
+    - misconfiguration/config: `bash docker/trivy/scan.sh config`
+    - scansione completa con Dockerfile inclusi: `./docker/trivy/scan.sh all`
+    - scansione completa con Dockerfile inclusi: `bash docker/trivy/scan.sh all`
+    - scansione completa senza Dockerfile: `./docker/trivy/scan.sh all-without-dockerfiles`
+    - scansione completa senza Dockerfile: `bash docker/trivy/scan.sh all-without-dockerfiles`
+    - filesystem con report JSON: `./docker/trivy/scan.sh --report-json fs`
+    - scansione completa con report JSON: `./docker/trivy/scan.sh --report-json all`
+
+- configurazione attuale:
+    - `all` include i `Dockerfile` del repository
+    - `all-without-dockerfiles` esclude i `Dockerfile` del repository sotto `docker/`
+    - `all-without-dockerfiles` esclude anche Laravel Sail vendorizzato sotto `vendor/laravel/sail`
+    - `all-without-dockerfiles` nel passaggio `fs` usa solo gli scanner `vuln` e `misconfig`, senza `secret`
+    - viene usata una cache Docker persistente dedicata a Trivy
+    - con `--report-json` i file vengono salvati in `storage/app/trivy-reports` con timestamp nel nome
+    - per i comandi composti (`all`, `all-with-dockerfiles`, `all-without-dockerfiles`) vengono generati file distinti per `fs` e `config`
+
+- opzioni extra:
+    - e` possibile passare opzioni Trivy in coda al comando
+    - esempio: `./docker/trivy/scan.sh fs --severity HIGH,CRITICAL`
+    - esempio: `bash docker/trivy/scan.sh fs --severity HIGH,CRITICAL`
+
+- nota:
+    - la parte produzione non e` ancora inclusa e verra` gestita separatamente
+
 # Implementazione
 
 ## Server Data Table example
