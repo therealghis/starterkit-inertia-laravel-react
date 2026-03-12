@@ -5,9 +5,8 @@ namespace App\Support\Trivy;
 use App\Support\Trivy\Dto\SecurityScanExecutionResult;
 use App\Support\Trivy\Inteface\SecurityRawReportRepositoryInterface;
 use Illuminate\Contracts\Process\ProcessResult;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
 
 class SecurityScanRunnerService {
     public function __construct(
@@ -15,17 +14,19 @@ class SecurityScanRunnerService {
     ) {
     }
 
-    public function run(?string $scanMode = null): SecurityScanExecutionResult {
+    public function run(?string $scanMode = null, ?string $reportPrefix = null): SecurityScanExecutionResult {
         $mode = $scanMode ?? $this->defaultScanMode();
-        $existingReports = $this->rawReportRepository->discoverGeneratedReports();
+        $reportPrefix ??= (string) Str::uuid();
 
         $startedAt = microtime(true);
         $result = Process::path(base_path())
             ->timeout(300)
-            ->run($this->command($mode));
+            ->run($this->command($mode, $reportPrefix));
         $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
-        $generatedReportPaths = $this->generatedReportPaths($existingReports, $startedAt);
+        $generatedReportPaths = $this->rawReportRepository->existingReportPaths(
+            $this->expectedReportPaths($mode, $reportPrefix),
+        );
         $failureReason = $this->failureReason($result, $generatedReportPaths);
 
         return new SecurityScanExecutionResult(
@@ -40,24 +41,15 @@ class SecurityScanRunnerService {
         );
     }
 
-    private function command(string $scanMode): array {
+    private function command(string $scanMode, string $reportPrefix): array {
         return [
             'bash',
             $this->configuredCommand(),
             '--report-json',
+            '--report-prefix',
+            $reportPrefix,
             $scanMode,
         ];
-    }
-
-    private function generatedReportPaths(array $existingReports, float $startedAt): array {
-        $currentReports = $this->rawReportRepository->discoverGeneratedReports();
-        $generatedReportPaths = array_values(array_diff($currentReports, $existingReports));
-
-        if ($generatedReportPaths !== []) {
-            return $generatedReportPaths;
-        }
-
-        return $this->recentlyModifiedReportPaths($startedAt);
     }
 
     private function failureReason(ProcessResult $result, array $generatedReportPaths): ?string {
@@ -80,25 +72,21 @@ class SecurityScanRunnerService {
         return (string) config('trivy.scan.default_mode', 'all-without-dockerfiles');
     }
 
-    private function recentlyModifiedReportPaths(float $startedAt): array {
-        $startedAtSeconds = (int) floor($startedAt);
-        $disk = Storage::disk((string) config('trivy.reports.disk', 'local'));
+    private function expectedReportPaths(string $scanMode, string $reportPrefix): array {
         $directory = trim((string) config('trivy.reports.directory', 'trivy-reports'), '/');
 
-        $reportPaths = [];
-
-        foreach ($disk->files($directory) as $path) {
-            if (! Str::endsWith($path, '.json')) {
-                continue;
-            }
-
-            if ($disk->lastModified($path) < $startedAtSeconds) {
-                continue;
-            }
-
-            $reportPaths[] = $path;
-        }
-
-        return $reportPaths;
+        return match ($scanMode) {
+            'fs' => ["{$directory}/{$reportPrefix}-fs.json"],
+            'config' => ["{$directory}/{$reportPrefix}-config.json"],
+            'all', 'all-with-dockerfiles' => [
+                "{$directory}/{$reportPrefix}-all-with-dockerfiles-fs.json",
+                "{$directory}/{$reportPrefix}-all-with-dockerfiles-config.json",
+            ],
+            'all-without-dockerfiles' => [
+                "{$directory}/{$reportPrefix}-all-without-dockerfiles-fs.json",
+                "{$directory}/{$reportPrefix}-all-without-dockerfiles-config.json",
+            ],
+            default => [],
+        };
     }
 }

@@ -25,7 +25,7 @@ return [
     ],
 
     'reports' => [
-        'disk' => env('TRIVY_REPORTS_DISK', 'local'),
+        'disk' => env('TRIVY_REPORTS_DISK', 'trivy_reports'),
         'directory' => env('TRIVY_REPORTS_DIRECTORY', 'trivy-reports'),
     ],
 

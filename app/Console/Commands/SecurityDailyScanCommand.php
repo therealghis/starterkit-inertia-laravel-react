@@ -35,7 +35,7 @@ class SecurityDailyScanCommand extends Command {
             'started_at' => Date::now(),
         ]);
 
-        $result = $scanRunner->run($scan->scan_mode);
+        $result = $scanRunner->run($scan->scan_mode, $scan->scan_key);
 
         if (! empty($result->generatedReportPaths)) {
             $rawReportRepository->storeReportPaths($scan, $result->generatedReportPaths);
@@ -53,7 +53,7 @@ class SecurityDailyScanCommand extends Command {
             $scan->status = SecurityScanStatus::Failed;
             $scan->finished_at = Date::now();
             $scan->error_message = $errorMessage;
-            $scan->save();
+            $scan->saveOrFail();
 
             Log::error('Security daily scan failed.', [
                 'scan_id' => $scan->id,
@@ -75,7 +75,7 @@ class SecurityDailyScanCommand extends Command {
         $scan->status = SecurityScanStatus::Completed;
         $scan->finished_at = Date::now();
         $scan->error_message = null;
-        $scan->save();
+        $scan->saveOrFail();
 
         $this->info('Security daily scan completed.');
 

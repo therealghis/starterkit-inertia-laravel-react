@@ -10,40 +10,45 @@ use Illuminate\Support\Str;
 
 class FileSecurityRawReportRepository implements SecurityRawReportRepositoryInterface {
     public function discoverGeneratedReports(): array {
-        $paths = [];
+        return $this->jsonReportPaths(
+            Storage::disk($this->disk())->files($this->directory()),
+        );
+    }
 
-        foreach (Storage::disk($this->disk())->files($this->directory()) as $path) {
-            if (! Str::endsWith($path, '.json')) {
+    public function existingReportPaths(array $paths): array {
+        $disk = Storage::disk($this->disk());
+        $existingPaths = [];
+
+        foreach ($this->jsonReportPaths($paths) as $path) {
+            if (! $disk->exists($path)) {
                 continue;
             }
 
-            $paths[] = $path;
+            $existingPaths[] = $path;
         }
 
-        return $paths;
+        return $existingPaths;
     }
 
     public function storeReportPaths(SecurityScan $scan, array $reportPaths): SecurityScan {
         $metadata = [];
 
-        foreach ($reportPaths as $path) {
-            $reportMetadata = $this->normalizeMetadata($path);
-
-            if (is_null($reportMetadata)) {
-                continue;
-            }
-
-            $metadata[] = $reportMetadata;
+        foreach ($this->existingReportPaths($reportPaths) as $path) {
+            $metadata[] = [
+                'disk' => $this->disk(),
+                'path' => $path,
+                'filename' => basename($path),
+            ];
         }
 
         $scan->raw_report_paths = $metadata;
-        $scan->save();
+        $scan->saveOrFail();
 
         return $scan;
     }
 
     public function readReport(string $path): array {
-        $content = Storage::disk($this->disk())->json($this->normalizePath($path));
+        $content = Storage::disk($this->disk())->json($path);
 
         return is_array($content) ? $content : [];
     }
@@ -67,41 +72,33 @@ class FileSecurityRawReportRepository implements SecurityRawReportRepositoryInte
         return $reports;
     }
 
-    private function normalizeMetadata(string $path): ?array {
-        $normalizedPath = $this->normalizePath($path);
-
-        if (empty($normalizedPath) or ! Storage::disk($this->disk())->exists($normalizedPath)) {
-            return null;
-        }
-
-        return [
-            'disk' => $this->disk(),
-            'path' => $normalizedPath,
-            'filename' => basename($normalizedPath),
-        ];
-    }
-
-    private function normalizePath(string $path): string {
-        $path = trim($path);
-
-        if (empty($path)) {
-            return '';
-        }
-
-        $storageRoot = storage_path('app').DIRECTORY_SEPARATOR;
-
-        if (str_starts_with($path, $storageRoot)) {
-            return ltrim(Str::after($path, $storageRoot), '/');
-        }
-
-        return ltrim($path, '/');
-    }
-
     private function disk(): string {
-        return (string) config('trivy.reports.disk', 'local');
+        return (string) config('trivy.reports.disk', 'trivy_reports');
     }
 
     private function directory(): string {
         return trim((string) config('trivy.reports.directory', 'trivy-reports'), '/');
+    }
+
+    private function jsonReportPaths(array $paths): array {
+        $reportPaths = [];
+
+        foreach ($paths as $path) {
+            $path = ltrim(trim((string) $path), '/');
+
+            if ($path === '' || ! Str::endsWith($path, '.json')) {
+                continue;
+            }
+
+            if (! str_starts_with($path, $this->directory().'/')) {
+                continue;
+            }
+
+            $reportPaths[] = $path;
+        }
+
+        sort($reportPaths);
+
+        return array_values(array_unique($reportPaths));
     }
 }

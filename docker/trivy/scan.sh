@@ -11,6 +11,7 @@ VENDOR_SKIP_DIRS="${PROJECT_PATH}/vendor/laravel/sail"
 TRIVY_REPORT_DIR="${PROJECT_ROOT}/storage/app/trivy-reports"
 LARAVEL_TEST_SERVICE="${LARAVEL_TEST_SERVICE:-laravel.test}"
 GENERATE_JSON_REPORT=false
+REPORT_PREFIX=""
 RUNNING_INSIDE_CONTAINER="${TRIVY_RUNNING_INSIDE_CONTAINER:-false}"
 
 if [[ "${LARAVEL_SAIL:-}" == "1" || -f "/.dockerenv" ]]; then
@@ -25,7 +26,7 @@ ORIGINAL_ARGS=("$@")
 
 usage() {
     cat <<EOF
-Uso: ./docker/trivy/scan.sh [--report-json] [fs|config|all|all-with-dockerfiles|all-without-dockerfiles] [argomenti extra]
+Uso: ./docker/trivy/scan.sh [--report-json] [--report-prefix prefix] [fs|config|all|all-with-dockerfiles|all-without-dockerfiles] [argomenti extra]
 
 Comandi:
   fs                       Scansione filesystem del progetto
@@ -39,6 +40,7 @@ Esempi:
   ./docker/trivy/scan.sh config
   ./docker/trivy/scan.sh all
   ./docker/trivy/scan.sh --report-json fs
+  ./docker/trivy/scan.sh --report-json --report-prefix manual-test fs
   ./docker/trivy/scan.sh all-with-dockerfiles
   ./docker/trivy/scan.sh all-without-dockerfiles
   ./docker/trivy/scan.sh fs --severity HIGH,CRITICAL
@@ -54,10 +56,17 @@ build_report_args() {
 
     mkdir -p "${TRIVY_REPORT_DIR}"
 
-    local timestamp
-    timestamp="$(date +'%Y-%m-%d_%H-%M-%S')"
+    local report_filename
 
-    printf '%s\n' --format json --output "${PROJECT_PATH}/storage/app/trivy-reports/${timestamp}-${report_key}.json"
+    if [[ "${REPORT_PREFIX}" != "" ]]; then
+        report_filename="${REPORT_PREFIX}-${report_key}.json"
+    else
+        local timestamp
+        timestamp="$(date +'%Y-%m-%d_%H-%M-%S')"
+        report_filename="${timestamp}-${report_key}.json"
+    fi
+
+    printf '%s\n' --format json --output "${PROJECT_PATH}/storage/app/trivy-reports/${report_filename}"
 }
 
 run_trivy() {
@@ -90,6 +99,16 @@ while [[ $# -gt 0 ]]; do
         --report-json)
             GENERATE_JSON_REPORT=true
             shift
+            ;;
+        --report-prefix)
+            REPORT_PREFIX="${2:-}"
+
+            if [[ "${REPORT_PREFIX}" == "" ]]; then
+                usage
+                exit 1
+            fi
+
+            shift 2
             ;;
         *)
             break

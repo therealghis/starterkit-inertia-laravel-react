@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Process;
 use Tests\TestCase;
 
 class SecurityScanRunnerServiceTest extends TestCase {
-    public function test_it_runs_trivy_with_default_configuration_and_detects_generated_reports(): void {
+    public function test_it_runs_trivy_with_a_deterministic_report_prefix_and_detects_expected_reports(): void {
         config()->set('trivy.command', './docker/trivy/scan.sh');
         config()->set('trivy.scan.default_mode', 'all-without-dockerfiles');
 
@@ -22,20 +22,12 @@ class SecurityScanRunnerServiceTest extends TestCase {
         ]);
 
         $repository = new class () implements SecurityRawReportRepositoryInterface {
-            private int $calls = 0;
-
             public function discoverGeneratedReports(): array {
-                $this->calls++;
+                return [];
+            }
 
-                if ($this->calls === 1) {
-                    return ['trivy-reports/old.json'];
-                }
-
-                return [
-                    'trivy-reports/old.json',
-                    'trivy-reports/new-fs.json',
-                    'trivy-reports/new-config.json',
-                ];
+            public function existingReportPaths(array $paths): array {
+                return $paths;
             }
 
             public function storeReportPaths(SecurityScan $scan, array $reportPaths): SecurityScan {
@@ -52,13 +44,15 @@ class SecurityScanRunnerServiceTest extends TestCase {
         };
 
         $service = new SecurityScanRunnerService($repository);
-        $result = $service->run();
+        $result = $service->run('all-without-dockerfiles', 'scan-key-123');
 
         Process::assertRan(function (object $process) {
             return $process->command == [
                 'bash',
                 './docker/trivy/scan.sh',
                 '--report-json',
+                '--report-prefix',
+                'scan-key-123',
                 'all-without-dockerfiles',
             ];
         });
@@ -66,16 +60,16 @@ class SecurityScanRunnerServiceTest extends TestCase {
         $this->assertTrue($result->successful);
         $this->assertSame(0, $result->exitCode);
         $this->assertSame('all-without-dockerfiles', $result->scanMode);
-        $this->assertEqualsCanonicalizing([
-            'trivy-reports/new-config.json',
-            'trivy-reports/new-fs.json',
+        $this->assertSame([
+            'trivy-reports/scan-key-123-all-without-dockerfiles-fs.json',
+            'trivy-reports/scan-key-123-all-without-dockerfiles-config.json',
         ], $result->generatedReportPaths);
         $this->assertSame("scan completed\n", $result->stdout);
         $this->assertSame('', $result->stderr);
         $this->assertNull($result->failureReason);
     }
 
-    public function test_it_fails_when_the_command_completes_without_reports(): void {
+    public function test_it_fails_when_the_expected_reports_are_missing(): void {
         Process::fake([
             '*' => Process::result(
                 output: 'scan completed',
@@ -86,6 +80,10 @@ class SecurityScanRunnerServiceTest extends TestCase {
 
         $repository = new class () implements SecurityRawReportRepositoryInterface {
             public function discoverGeneratedReports(): array {
+                return [];
+            }
+
+            public function existingReportPaths(array $paths): array {
                 return [];
             }
 
@@ -102,7 +100,7 @@ class SecurityScanRunnerServiceTest extends TestCase {
             }
         };
 
-        $result = (new SecurityScanRunnerService($repository))->run('all-without-dockerfiles');
+        $result = (new SecurityScanRunnerService($repository))->run('all-without-dockerfiles', 'scan-key-123');
 
         $this->assertFalse($result->successful);
         $this->assertSame('Trivy command completed without generating JSON reports.', $result->failureReason);

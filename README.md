@@ -152,6 +152,7 @@
 - da host il wrapper entra in `laravel.test`; se viene lanciato gia` dentro `laravel.test` esegue `trivy` direttamente nello stesso container
 - il comando applicativo `sail artisan security:daily-scan` usa lo stesso wrapper senza richiedere Docker dentro `laravel.test`
 - il flag `--report-json` salva il report in `storage/app/trivy-reports`
+- il backend salva e legge i report usando il disk Laravel dedicato `trivy_reports`, con root `storage/app`
 
 - comandi disponibili:
     - filesystem del progetto: `./docker/trivy/scan.sh fs`
@@ -179,6 +180,7 @@
     - e` possibile passare opzioni Trivy in coda al comando
     - esempio: `./docker/trivy/scan.sh fs --severity HIGH,CRITICAL`
     - esempio: `bash docker/trivy/scan.sh fs --severity HIGH,CRITICAL`
+    - esempio con prefisso file deterministico: `./docker/trivy/scan.sh --report-json --report-prefix manual-test fs`
     - esempio tramite comando applicativo: `sail artisan security:daily-scan`
 
 - nota:
