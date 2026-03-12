@@ -94,6 +94,8 @@ type ActiveFilterChip = {
     clear: () => void;
 };
 
+type FilterValue = ColumnFiltersState[number]['value'];
+
 function parseOptionalNumber(input: string): number | undefined {
     if (input.trim() === '') {
         return undefined;
@@ -144,20 +146,20 @@ function getMultiLabel(filter: Extract<DataTableFilterDef, { kind: 'multi' }>, s
     return `${labels.slice(0, 2).join(', ')} +${labels.length - 2}`;
 }
 
-function getFilterChip<TData>(
-    table: TanStackTable<TData>,
+function getFilterValue(
+    columnFilters: ColumnFiltersState,
+    columnId: string,
+): FilterValue | undefined {
+    return columnFilters.find((filter) => filter.id === columnId)?.value;
+}
+
+function getFilterChip(
+    columnFilters: ColumnFiltersState,
     filter: DataTableFilterDef,
+    clear: () => void,
 ): ActiveFilterChip | null {
-    const column = table.getColumn(filter.columnId);
-
-    if (!column) {
-        return null;
-    }
-
-    const clear = () => column.setFilterValue(undefined);
-
     if (filter.kind === 'text') {
-        const value = (column.getFilterValue() as string | undefined)?.trim();
+        const value = (getFilterValue(columnFilters, filter.columnId) as string | undefined)?.trim();
 
         if (!value) {
             return null;
@@ -172,7 +174,7 @@ function getFilterChip<TData>(
     }
 
     if (filter.kind === 'select') {
-        const value = column.getFilterValue() as string | undefined;
+        const value = getFilterValue(columnFilters, filter.columnId) as string | undefined;
 
         if (!value) {
             return null;
@@ -187,7 +189,7 @@ function getFilterChip<TData>(
     }
 
     if (filter.kind === 'boolean') {
-        const value = column.getFilterValue() as boolean | undefined;
+        const value = getFilterValue(columnFilters, filter.columnId) as boolean | undefined;
 
         if (value === undefined) {
             return null;
@@ -202,7 +204,7 @@ function getFilterChip<TData>(
     }
 
     if (filter.kind === 'multi') {
-        const value = (column.getFilterValue() as string[] | undefined) ?? [];
+        const value = (getFilterValue(columnFilters, filter.columnId) as string[] | undefined) ?? [];
         const label = getMultiLabel(filter, value);
 
         if (!label) {
@@ -218,7 +220,7 @@ function getFilterChip<TData>(
     }
 
     if (filter.kind === 'numberRange') {
-        const value = column.getFilterValue() as
+        const value = getFilterValue(columnFilters, filter.columnId) as
             | {
                   min?: number;
                   max?: number;
@@ -258,20 +260,16 @@ function getDesktopFieldClassName(filter: DataTableFilterDef, filtersLayout: 'in
 }
 
 function FilterField<TData>({
-    table,
     filter,
+    value,
+    onChange,
     className,
 }: {
-    table: TanStackTable<TData>;
     filter: DataTableFilterDef;
+    value: FilterValue | undefined;
+    onChange: (value: FilterValue | undefined) => void;
     className?: string;
 }) {
-    const column = table.getColumn(filter.columnId);
-
-    if (!column) {
-        return null;
-    }
-
     if (filter.kind === 'text') {
         return (
             <div className={cn("space-y-1.5", className)}>
@@ -280,8 +278,8 @@ function FilterField<TData>({
                 </label>
                 <Input
                     placeholder={filter.placeholder ?? 'Filtra...'}
-                    value={(column.getFilterValue() as string) ?? ''}
-                    onChange={(event) => column.setFilterValue(event.target.value)}
+                    value={(value as string | undefined) ?? ''}
+                    onChange={(event) => onChange(event.target.value)}
                 />
             </div>
         );
@@ -290,7 +288,7 @@ function FilterField<TData>({
     if (filter.kind === 'select') {
         const clearable = filter.clearable !== false;
         const selectAllValue = '__all__';
-        const value = (column.getFilterValue() as string | undefined) ?? selectAllValue;
+        const currentValue = (value as string | undefined) ?? selectAllValue;
 
         return (
             <div className={cn("space-y-1.5", className)}>
@@ -298,14 +296,14 @@ function FilterField<TData>({
                     {filter.label}
                 </label>
                 <Select
-                    value={value}
+                    value={currentValue}
                     onValueChange={(nextValue) => {
                         if (clearable && nextValue === selectAllValue) {
-                            column.setFilterValue(undefined);
+                            onChange(undefined);
                             return;
                         }
 
-                        column.setFilterValue(nextValue);
+                        onChange(nextValue);
                     }}
                 >
                     <SelectTrigger>
@@ -327,8 +325,9 @@ function FilterField<TData>({
     }
 
     if (filter.kind === 'boolean') {
-        const currentValue = column.getFilterValue() as boolean | undefined;
-        const value = currentValue === true ? 'true' : currentValue === false ? 'false' : 'all';
+        const currentValue = value as boolean | undefined;
+        const normalizedValue =
+            currentValue === true ? 'true' : currentValue === false ? 'false' : 'all';
 
         return (
             <div className={cn("space-y-1.5", className)}>
@@ -336,14 +335,14 @@ function FilterField<TData>({
                     {filter.label}
                 </label>
                 <Select
-                    value={value}
+                    value={normalizedValue}
                     onValueChange={(nextValue) => {
                         if (nextValue === 'all') {
-                            column.setFilterValue(undefined);
+                            onChange(undefined);
                             return;
                         }
 
-                        column.setFilterValue(nextValue === 'true');
+                        onChange(nextValue === 'true');
                     }}
                 >
                     <SelectTrigger>
@@ -360,7 +359,7 @@ function FilterField<TData>({
     }
 
     if (filter.kind === 'multi') {
-        const selected = (column.getFilterValue() as string[] | undefined) ?? [];
+        const selected = (value as string[] | undefined) ?? [];
         const triggerLabel = getMultiLabel(filter, selected) ?? filter.label;
 
         return (
@@ -383,7 +382,7 @@ function FilterField<TData>({
                         <DropdownMenuItem
                             onSelect={(event) => {
                                 event.preventDefault();
-                                column.setFilterValue(undefined);
+                                onChange(undefined);
                             }}
                         >
                             Tutti
@@ -401,7 +400,7 @@ function FilterField<TData>({
                                             ? Array.from(new Set([...selected, option.value]))
                                             : selected.filter((value) => value !== option.value);
 
-                                        column.setFilterValue(
+                                        onChange(
                                             nextSelection.length > 0 ? nextSelection : undefined,
                                         );
                                     }}
@@ -417,7 +416,7 @@ function FilterField<TData>({
         );
     }
 
-    const currentValue = (column.getFilterValue() as { min?: number; max?: number } | undefined) ?? {};
+    const currentValue = (value as { min?: number; max?: number } | undefined) ?? {};
 
     return (
         <div className={cn("space-y-1.5", className)}>
@@ -435,7 +434,7 @@ function FilterField<TData>({
                             min: parseOptionalNumber(event.target.value),
                         };
 
-                        column.setFilterValue(
+                        onChange(
                             nextValue.min === undefined && nextValue.max === undefined
                                 ? undefined
                                 : nextValue,
@@ -452,7 +451,7 @@ function FilterField<TData>({
                             max: parseOptionalNumber(event.target.value),
                         };
 
-                        column.setFilterValue(
+                        onChange(
                             nextValue.min === undefined && nextValue.max === undefined
                                 ? undefined
                                 : nextValue,
@@ -464,21 +463,23 @@ function FilterField<TData>({
     );
 }
 
-function FilterPanel<TData>({
-    table,
+function FilterPanel({
+    columnFilters,
     filters,
     filtersLayout,
     showResetFilters,
     hasActiveFilters,
     onResetFilters,
+    onFilterValueChange,
     className,
 }: {
-    table: TanStackTable<TData>;
+    columnFilters: ColumnFiltersState;
     filters: DataTableFilterDef[];
     filtersLayout: 'inline' | 'stacked';
     showResetFilters: boolean;
     hasActiveFilters: boolean;
     onResetFilters: () => void;
+    onFilterValueChange: (columnId: string, value: FilterValue | undefined) => void;
     className?: string;
 }) {
     return (
@@ -518,8 +519,9 @@ function FilterPanel<TData>({
                 {filters.map((filter) => (
                     <FilterField
                         key={filter.columnId}
-                        table={table}
                         filter={filter}
+                        value={getFilterValue(columnFilters, filter.columnId)}
+                        onChange={(value) => onFilterValueChange(filter.columnId, value)}
                         className={getDesktopFieldClassName(filter, filtersLayout)}
                     />
                 ))}
@@ -636,24 +638,6 @@ export function ServerDataTable<TData, TValue>({
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
     const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false);
 
-    React.useEffect(() => {
-        if (initialColumnFilters) {
-            setColumnFilters(initialColumnFilters);
-        }
-    }, [initialColumnFilters]);
-
-    React.useEffect(() => {
-        if (initialSorting) {
-            setSorting(initialSorting);
-        }
-    }, [initialSorting]);
-
-    React.useEffect(() => {
-        if (initialPagination) {
-            setPagination(initialPagination);
-        }
-    }, [initialPagination]);
-
     const query = React.useMemo(
         () => ({
             columnFilters,
@@ -756,12 +740,28 @@ export function ServerDataTable<TData, TValue>({
     const visibleColumns = table
         .getAllColumns()
         .filter((column) => column.id !== 'select' && column.getCanHide());
+
+    const setFilterValue = React.useCallback((columnId: string, value: FilterValue | undefined) => {
+        setColumnFilters((previous) => {
+            const next = previous.filter((filter) => filter.id !== columnId);
+
+            if (value === undefined) {
+                return next;
+            }
+
+            return [...next, { id: columnId, value }];
+        });
+        setPagination((current) => ({ ...current, pageIndex: 0 }));
+    }, []);
+
     const activeFilterChips = React.useMemo(
         () =>
             (filters ?? [])
-                .map((filter) => getFilterChip(table, filter))
+                .map((filter) =>
+                    getFilterChip(columnFilters, filter, () => setFilterValue(filter.columnId, undefined)),
+                )
                 .filter((chip): chip is ActiveFilterChip => chip !== null),
-        [filters, table],
+        [columnFilters, filters, setFilterValue],
     );
 
     function resetFilters(): void {
@@ -788,12 +788,13 @@ export function ServerDataTable<TData, TValue>({
                         <>
                             <div className="hidden xl:block">
                                 <FilterPanel
-                                    table={table}
+                                    columnFilters={columnFilters}
                                     filters={filters ?? []}
                                     filtersLayout={filtersLayout}
                                     showResetFilters={showResetFilters}
                                     hasActiveFilters={hasActiveFilters}
                                     onResetFilters={resetFilters}
+                                    onFilterValueChange={setFilterValue}
                                 />
                             </div>
                             <ActiveFilterBar
@@ -840,12 +841,13 @@ export function ServerDataTable<TData, TValue>({
                                 </SheetHeader>
                                 <div className="px-4 pb-4">
                                     <FilterPanel
-                                        table={table}
+                                        columnFilters={columnFilters}
                                         filters={filters ?? []}
                                         filtersLayout="stacked"
                                         showResetFilters={showResetFilters}
                                         hasActiveFilters={hasActiveFilters}
                                         onResetFilters={resetFilters}
+                                        onFilterValueChange={setFilterValue}
                                         className="border-0 bg-transparent p-0"
                                     />
                                 </div>
@@ -961,7 +963,7 @@ export function ServerDataTable<TData, TValue>({
                                 <SelectTrigger className="w-[96px]">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent side="top" align="end" className="min-w-[96px]">
                                     {[5, 10, 20, 50, 100].map((size) => (
                                         <SelectItem key={size} value={String(size)}>
                                             {size}

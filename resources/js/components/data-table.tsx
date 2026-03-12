@@ -927,7 +927,7 @@ export function DataTable<TData, TValue>({
                         <SelectTrigger className="w-[90px]">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent side="top" align="end" className="min-w-[96px]">
                             {[5, 10, 20, 50].map((size) => (
                                 <SelectItem key={size} value={String(size)}>
                                     {size}

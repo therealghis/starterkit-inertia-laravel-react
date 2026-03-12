@@ -151,6 +151,28 @@
 
 # Implementazione
 
+## Server Data Table example
+- pagina esempio disponibile in `resources/js/pages/server-data-table-demo.tsx`
+- rotta Laravel: `server-data-table-demo`
+- path: `/components/server-data-table-demo`
+- accesso consentito solo a utenti autenticati e verificati, perche` la rotta e` dentro il gruppo `auth` + `verified`
+- la pagina mostra un esempio completo di utilizzo di `resources/js/components/server-data-table.tsx`
+    - colonne
+    - filtri
+    - sorting
+    - paginazione
+    - row selection
+    - bulk action
+    - gestione query lato parent per simulare flusso server-driven
+- se vuoi vederla nel browser:
+    - avvia l'applicazione
+    - effettua login
+    - apri `APP_URL/components/server-data-table-demo`
+- se una modifica frontend non appare su questa pagina, eseguire `npm run build` oppure `npm run dev`
+- se non serve piu` e vuoi eliminarla:
+    - rimuovere la pagina `resources/js/pages/server-data-table-demo.tsx`
+    - rimuovere la rotta `server-data-table-demo` da `routes/web.php`
+
 ## Stato vuoto riusabile
 - componente disponibile: `resources/js/components/empty-state.tsx`
 - usarlo come pattern comune per liste vuote, dashboard vuote e assenza dati

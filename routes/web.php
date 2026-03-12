@@ -18,6 +18,8 @@ Route::put('/locale/{locale}', function (Request $request, string $locale): Redi
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::inertia('/components/server-data-table-demo', 'server-data-table-demo')
+        ->name('server-data-table-demo');
 });
 
 require __DIR__.'/settings.php';
