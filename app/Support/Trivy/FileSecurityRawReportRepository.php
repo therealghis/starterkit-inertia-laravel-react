@@ -3,6 +3,8 @@
 namespace App\Support\Trivy;
 
 use App\Models\Trivy\SecurityScan;
+use App\Support\Trivy\Dto\SecurityRawReport;
+use App\Support\Trivy\Inteface\SecurityRawReportRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 

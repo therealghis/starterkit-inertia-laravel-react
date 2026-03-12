@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Trivy\SecurityScan;
-use App\Support\Trivy\SecurityRawReportRepositoryInterface;
+use App\Support\Trivy\Inteface\SecurityRawReportRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 

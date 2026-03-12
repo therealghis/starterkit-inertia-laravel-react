@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Trivy;
+namespace App\Support\Trivy\Dto;
 
 readonly class SecurityRawReport {
     public function __construct(

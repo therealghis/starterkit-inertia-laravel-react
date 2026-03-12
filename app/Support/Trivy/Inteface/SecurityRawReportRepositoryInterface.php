@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Support\Trivy;
+namespace App\Support\Trivy\Inteface;
 
 use App\Models\Trivy\SecurityScan;
 
