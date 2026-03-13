@@ -1,10 +1,17 @@
 {
   "mcpServers": {
     "laravel-boost": {
-      "command": "wsl.exe",
+      "command": "docker",
       "args": [
-        "/usr/bin/php8.3",
-        "/home/devel/laravel-inertia-react/artisan",
+        "exec",
+        "-i",
+        "-u",
+        "www-data",
+        "-w",
+        "/var/www/html",
+        "laravel-inertia-react-laravel.test-1",
+        "php",
+        "artisan",
         "boost:mcp"
       ]
     }
