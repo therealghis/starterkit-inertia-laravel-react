@@ -29,10 +29,6 @@ return [
         'directory' => env('TRIVY_REPORTS_DIRECTORY', 'trivy-reports'),
     ],
 
-    'retention' => [
-        'raw_reports_days' => (int) env('TRIVY_RAW_REPORT_RETENTION_DAYS', 30),
-    ],
-
     'database' => [
         'connection' => env('TRIVY_REPORTS_DB_CONNECTION', 'trivy_reports'),
     ],

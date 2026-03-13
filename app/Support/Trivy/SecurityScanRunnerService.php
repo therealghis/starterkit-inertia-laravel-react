@@ -42,7 +42,7 @@ class SecurityScanRunnerService {
     }
 
     private function command(string $scanMode, string $reportPrefix): array {
-        return [
+        $command = [
             'bash',
             $this->configuredCommand(),
             '--report-json',
@@ -50,6 +50,12 @@ class SecurityScanRunnerService {
             $reportPrefix,
             $scanMode,
         ];
+
+        foreach ($this->severityArguments() as $argument) {
+            $command[] = $argument;
+        }
+
+        return $command;
     }
 
     private function failureReason(ProcessResult $result, array $generatedReportPaths): ?string {
@@ -70,6 +76,28 @@ class SecurityScanRunnerService {
 
     private function defaultScanMode(): string {
         return (string) config('trivy.scan.default_mode', 'all-without-dockerfiles');
+    }
+
+    private function severityArguments(): array {
+        $configuredSeverities = config('trivy.scan.alert_severities', []);
+
+        if (! is_array($configuredSeverities)) {
+            return [];
+        }
+
+        $severities = [];
+
+        foreach ($configuredSeverities as $configuredSeverity) {
+            $severity = strtoupper(trim((string) $configuredSeverity));
+
+            if (empty($severity)) {
+                continue;
+            }
+
+            $severities[] = $severity;
+        }
+
+        return ['--severity', implode(',', $severities)];
     }
 
     private function expectedReportPaths(string $scanMode, string $reportPrefix): array {

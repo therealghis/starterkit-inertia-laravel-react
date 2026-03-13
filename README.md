@@ -158,16 +158,18 @@
 - comandi principali:
     - scansione filesystem: `./docker/trivy/scan.sh fs`
     - scansione config/misconfiguration: `./docker/trivy/scan.sh config`
-    - scansione completa consigliata in locale: `./docker/trivy/scan.sh all-without-dockerfiles`
-    - scansione completa con report JSON: `./docker/trivy/scan.sh --report-json all-without-dockerfiles`
+    - scansione completa di default: `./docker/trivy/scan.sh all`
+    - scansione completa con report JSON: `./docker/trivy/scan.sh --report-json all`
+    - scansione completa senza Dockerfile del repository: `./docker/trivy/scan.sh all-without-dockerfiles`
     - comando applicativo Laravel: `sail artisan security:daily-scan`
 
 - comportamento:
-    - `all-without-dockerfiles` e` la modalita` di default usata anche dal comando Laravel
-    - esclude i Dockerfile del repository
-    - esclude `vendor/laravel/sail`
-    - esclude la directory `data/` usata dal MySQL locale
-    - nel passaggio `fs` usa gli scanner `vuln` e `misconfig`
+    - `all` e` la modalita` di default
+    - `all` include anche i Dockerfile del repository
+    - `all-without-dockerfiles` esclude i Dockerfile del repository e `vendor/laravel/sail`
+    - la directory `data/` usata dal MySQL locale viene esclusa dalle scansioni filesystem
+    - nel passaggio `fs` usa gli scanner `vuln`, `secret` e `misconfig`
+    - il comando Laravel passa a Trivy anche `--severity` usando `TRIVY_ALERT_SEVERITIES`
 
 - output atteso:
     - se usi `--report-json`, trovi i file in `storage/app/trivy-reports`
