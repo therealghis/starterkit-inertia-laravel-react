@@ -28,7 +28,7 @@ class SecurityDeltaService {
                 continue;
             }
 
-            if ($this->statusValue($previousFinding) == SecurityFindingStatus::Open) {
+            if ($this->statusValue($previousFinding) === SecurityFindingStatus::Open->value) {
                 $stillOpen->push($currentFinding);
                 continue;
             }
@@ -39,7 +39,7 @@ class SecurityDeltaService {
         $fixed = collect();
 
         foreach ($previousByFingerprint as $fingerprint => $previousFinding) {
-            if ($this->statusValue($previousFinding) != SecurityFindingStatus::Open) {
+            if ($this->statusValue($previousFinding) !== SecurityFindingStatus::Open->value) {
                 continue;
             }
 

@@ -6,6 +6,7 @@ use App\Models\Trivy\SecurityScan;
 use App\Support\Trivy\Dto\SecurityScanExecutionResult;
 use App\Support\Trivy\Enums\SecurityScanStatus;
 use App\Support\Trivy\Inteface\SecurityRawReportRepositoryInterface;
+use App\Support\Trivy\SecurityFindingSyncService;
 use App\Support\Trivy\SecurityScanRunnerService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Date;
@@ -21,6 +22,7 @@ class SecurityDailyScanCommand extends Command {
 
     public function handle(
         SecurityScanRunnerService $scanRunner,
+        SecurityFindingSyncService $findingSyncService,
         SecurityRawReportRepositoryInterface $rawReportRepository,
     ): int {
         if (! config('trivy.enabled')) {
@@ -43,10 +45,28 @@ class SecurityDailyScanCommand extends Command {
         }
 
         if ($result->successful) {
-            $scan->updateOrFail([
+            $scan->fill([
                 'status' => SecurityScanStatus::Completed,
                 'finished_at' => Date::now(),
                 'error_message' => null,
+            ]);
+
+            $delta = $findingSyncService->sync(
+                $scan,
+                $rawReportRepository->reportsForScan($scan),
+            );
+
+            $scan->updateOrFail([
+                'status' => $scan->status,
+                'finished_at' => $scan->finished_at,
+                'error_message' => null,
+                'critical_count' => $delta['summary']['critical_count'],
+                'high_count' => $delta['summary']['high_count'],
+                'medium_count' => $delta['summary']['medium_count'],
+                'low_count' => $delta['summary']['low_count'],
+                'unknown_count' => $delta['summary']['unknown_count'],
+                'new_count' => $delta['summary']['new_count'],
+                'fixed_count' => $delta['summary']['fixed_count'],
             ]);
 
             $this->info('Security daily scan completed.');

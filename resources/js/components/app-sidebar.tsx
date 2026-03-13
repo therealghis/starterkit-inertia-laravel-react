@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, ShieldAlert } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useTranslations } from '@/hooks/use-translations';
 import { dashboard } from '@/routes';
+import securityScans from '@/routes/security-scans';
 
 export function AppSidebar() {
     const { t } = useTranslations();
@@ -23,6 +24,11 @@ export function AppSidebar() {
             title: t('Dashboard'),
             href: dashboard(),
             icon: LayoutGrid,
+        },
+        {
+            title: t('Security scans'),
+            href: securityScans.index(),
+            icon: ShieldAlert,
         },
     ];
 

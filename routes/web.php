@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SecurityScanController;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
     Route::inertia('/components/server-data-table-demo', 'server-data-table-demo')
         ->name('server-data-table-demo');
+    Route::get('/security/scans', [SecurityScanController::class, 'index'])->name('security-scans.index');
 });
 
 require __DIR__.'/settings.php';
