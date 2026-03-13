@@ -80,5 +80,17 @@
     "New": "New",
     "Fixed": "Fixed",
     "No raw reports": "No raw reports",
-    "This page is intended as a simple internal operational panel.": "This page is intended as a simple internal operational panel."
+    "This page is intended as a simple internal operational panel.": "This page is intended as a simple internal operational panel.",
+    "Operational visibility for the latest Trivy runs and the current open findings.": "Operational visibility for the latest Trivy runs and the current open findings.",
+    "Use these tabs to review the latest scan runs and the vulnerabilities that are still open.": "Use these tabs to review the latest scan runs and the vulnerabilities that are still open.",
+    "Open findings": "Open findings",
+    "CVE": "CVE",
+    "Package": "Package",
+    "Version": "Version",
+    "First seen": "First seen",
+    "Last seen": "Last seen",
+    "Target": "Target",
+    "Vulnerability ID": "Vulnerability ID",
+    "Filter by target...": "Filter by target...",
+    "Filter by vulnerability id...": "Filter by vulnerability id..."
 }

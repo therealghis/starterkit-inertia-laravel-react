@@ -2,29 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Trivy\SecurityFinding;
 use App\Models\Trivy\SecurityScan;
+use App\Support\Trivy\Enums\SecurityFindingStatus;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SecurityScanController extends Controller {
     public function index(Request $request): Response {
-        $perPage = (int) $request->integer('perPage', 10);
+        $tab = (string) $request->query('tab', 'scans');
 
-        if ($perPage < 5) {
-            $perPage = 5;
+        if (! in_array($tab, ['scans', 'open-findings'], true)) {
+            $tab = 'scans';
         }
 
-        if ($perPage > 100) {
-            $perPage = 100;
-        }
+        $scansPerPage = $this->perPage($request->integer('scansPerPage', 10));
+        $findingsPerPage = $this->perPage($request->integer('findingsPerPage', 10));
 
-        $search = trim((string) $request->query('search', ''));
-        $status = trim((string) $request->query('status', ''));
-        $sort = (string) $request->query('sort', 'finished_at');
-        $direction = strtolower((string) $request->query('direction', 'desc'));
+        $scansSearch = trim((string) $request->query('scansSearch', ''));
+        $scansStatus = trim((string) $request->query('scansStatus', ''));
+        $scansSort = (string) $request->query('scansSort', 'finished_at');
+        $scansDirection = $this->direction((string) $request->query('scansDirection', 'desc'));
 
-        $allowedSorts = [
+        $allowedScanSorts = [
             'finished_at',
             'status',
             'critical_count',
@@ -36,28 +37,43 @@ class SecurityScanController extends Controller {
             'fixed_count',
         ];
 
-        if (! in_array($sort, $allowedSorts, true)) {
-            $sort = 'finished_at';
+        if (! in_array($scansSort, $allowedScanSorts, true)) {
+            $scansSort = 'finished_at';
         }
 
-        if (! in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'desc';
+        $findingsSeverity = trim((string) $request->query('findingsSeverity', ''));
+        $findingsTarget = trim((string) $request->query('findingsTarget', ''));
+        $findingsVulnerabilityId = trim((string) $request->query('findingsVulnerabilityId', ''));
+        $findingsSort = (string) $request->query('findingsSort', 'last_seen_at');
+        $findingsDirection = $this->direction((string) $request->query('findingsDirection', 'desc'));
+
+        $allowedFindingSorts = [
+            'vulnerability_id',
+            'pkg_name',
+            'installed_version',
+            'severity',
+            'first_seen_at',
+            'last_seen_at',
+        ];
+
+        if (! in_array($findingsSort, $allowedFindingSorts, true)) {
+            $findingsSort = 'last_seen_at';
         }
 
         $scans = SecurityScan::query()
-            ->when(!empty($search), function ($query) use ($search) {
-                $query->where(function ($query) use ($search) {
+            ->when(! empty($scansSearch), function ($query) use ($scansSearch) {
+                $query->where(function ($query) use ($scansSearch) {
                     $query
-                        ->where('scan_key', 'like', "%{$search}%")
-                        ->orWhere('scan_mode', 'like', "%{$search}%");
+                        ->where('scan_key', 'like', "%{$scansSearch}%")
+                        ->orWhere('scan_mode', 'like', "%{$scansSearch}%");
                 });
             })
-            ->when(!empty($status), function ($query) use ($status) {
-                $query->where('status', $status);
+            ->when(! empty($scansStatus), function ($query) use ($scansStatus) {
+                $query->where('status', $scansStatus);
             })
-            ->orderBy($sort, $direction)
+            ->orderBy($scansSort, $scansDirection)
             ->orderByDesc('id')
-            ->paginate($perPage)
+            ->paginate($scansPerPage, ['*'], 'scansPage')
             ->withQueryString()
             ->through(function (SecurityScan $scan): array {
                 return [
@@ -86,22 +102,83 @@ class SecurityScanController extends Controller {
                 ];
             });
 
+        $openFindings = SecurityFinding::query()
+            ->where('status', SecurityFindingStatus::Open->value)
+            ->when(! empty($findingsSeverity), function ($query) use ($findingsSeverity) {
+                $query->where('severity', $findingsSeverity);
+            })
+            ->when(! empty($findingsTarget), function ($query) use ($findingsTarget) {
+                $query->where('target', 'like', "%{$findingsTarget}%");
+            })
+            ->when(! empty($findingsVulnerabilityId), function ($query) use ($findingsVulnerabilityId) {
+                $query->where('vulnerability_id', 'like', "%{$findingsVulnerabilityId}%");
+            })
+            ->orderBy($findingsSort, $findingsDirection)
+            ->orderByDesc('id')
+            ->paginate($findingsPerPage, ['*'], 'findingsPage')
+            ->withQueryString()
+            ->through(function (SecurityFinding $finding): array {
+                return [
+                    'id' => $finding->id,
+                    'vulnerability_id' => $finding->vulnerability_id,
+                    'package' => $finding->pkg_name,
+                    'installed_version' => $finding->installed_version,
+                    'severity' => $finding->severity->value,
+                    'target' => $finding->target,
+                    'first_seen_at' => optional($finding->first_seen_at)?->toIso8601String(),
+                    'last_seen_at' => optional($finding->last_seen_at)?->toIso8601String(),
+                ];
+            });
+
         return Inertia::render('security/scans/index', [
+            'activeTab' => $tab,
             'scans' => $scans,
-            'table' => [
+            'scansTable' => [
                 'filters' => [
-                    'search' => $search,
-                    'status' => $status,
+                    'search' => $scansSearch,
+                    'status' => $scansStatus,
                 ],
                 'sorting' => [
-                    'column' => $sort,
-                    'direction' => $direction,
+                    'column' => $scansSort,
+                    'direction' => $scansDirection,
                 ],
                 'pagination' => [
                     'page' => $scans->currentPage(),
                     'perPage' => $scans->perPage(),
                 ],
             ],
+            'openFindings' => $openFindings,
+            'openFindingsTable' => [
+                'filters' => [
+                    'severity' => $findingsSeverity,
+                    'target' => $findingsTarget,
+                    'vulnerability_id' => $findingsVulnerabilityId,
+                ],
+                'sorting' => [
+                    'column' => $findingsSort,
+                    'direction' => $findingsDirection,
+                ],
+                'pagination' => [
+                    'page' => $openFindings->currentPage(),
+                    'perPage' => $openFindings->perPage(),
+                ],
+            ],
         ]);
+    }
+
+    private function perPage(int $perPage): int {
+        if ($perPage < 5) {
+            return 5;
+        }
+
+        if ($perPage > 100) {
+            return 100;
+        }
+
+        return $perPage;
+    }
+
+    private function direction(string $direction): string {
+        return in_array(strtolower($direction), ['asc', 'desc'], true) ? strtolower($direction) : 'desc';
     }
 }
