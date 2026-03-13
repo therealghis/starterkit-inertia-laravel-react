@@ -81,7 +81,7 @@ class FileSecurityRawReportRepository implements SecurityRawReportRepositoryInte
         foreach ($paths as $path) {
             $path = ltrim(trim((string) $path), '/');
 
-            if ($path === '' || ! Str::endsWith($path, '.json')) {
+            if (empty($path) or ! Str::endsWith($path, '.json')) {
                 continue;
             }
 

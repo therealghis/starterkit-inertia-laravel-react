@@ -29,7 +29,7 @@ class SecurityDailyScanCommand extends Command {
             return SymfonyCommand::SUCCESS;
         }
 
-        $scan = SecurityScan::query()->create([
+        $scan = SecurityScan::create([
             'scan_key' => (string) Str::uuid(),
             'status' => SecurityScanStatus::Running,
             'scan_mode' => config('trivy.scan.default_mode'),
@@ -81,7 +81,7 @@ class SecurityDailyScanCommand extends Command {
     }
 
     private function errorMessage(SecurityScanExecutionResult $result): string {
-        if ($result->failureReason !== null && $result->failureReason !== self::GENERIC_TRIVY_FAILURE_MESSAGE) {
+        if (!is_null($result->failureReason) and $result->failureReason != self::GENERIC_TRIVY_FAILURE_MESSAGE) {
             return $result->failureReason;
         }
 
