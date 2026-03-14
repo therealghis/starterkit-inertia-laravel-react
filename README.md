@@ -148,12 +148,27 @@
 - cron Laravel standard:
     - `* * * * * cd /percorso/progetto && php artisan schedule:run >> /dev/null 2>&1`
 
+## Trivy source agent
+- questo progetto non fa piu` parsing, delta, findings, reporting o dashboard di sicurezza
+- questo progetto fa solo:
+    - eseguire Trivy
+    - generare i report raw JSON
+    - creare il manifest del pacchetto di scansione
+    - pubblicare report + manifest su filesystem condiviso
+    - tracciare l'esito tecnico minimo locale nella tabella `security_scans`
+- la logica centrale da spostare nel nuovo progetto dedicato e` stata raccolta in `centrale/`
+
 ## Trivy in locale
 - Trivy gira dentro il container `laravel.test`
 - il wrapper del progetto e` `docker/trivy/scan.sh`
 - da host puoi lanciarlo normalmente; il wrapper entra da solo nel container corretto
 - non usa `docker.sock` dentro `laravel.test`
 - i report JSON vengono salvati in `storage/app/trivy-reports`
+- i pacchetti pubblicati vengono salvati nel disk configurato da:
+    - `TRIVY_PUBLISH_DISK`
+    - `TRIVY_PUBLISH_DIRECTORY`
+    - `TRIVY_SOURCE_KEY`
+    - il path pubblicato espone subito progetto e giorno scansione senza leggere il manifest
 
 - comandi principali:
     - scansione filesystem: `./docker/trivy/scan.sh fs`
@@ -170,15 +185,89 @@
     - la directory `data/` usata dal MySQL locale viene esclusa dalle scansioni filesystem
     - nel passaggio `fs` usa gli scanner `vuln`, `secret` e `misconfig`
     - il comando Laravel passa a Trivy anche `--severity` usando `TRIVY_ALERT_SEVERITIES`
+    - dopo la generazione dei report raw il comando Laravel crea `manifest.json` e pubblica tutto nel filesystem condiviso
+    - `TRIVY_SOURCE_KEY` e` l'identificativo progetto che il centrale usera` per collegare la scansione
+    - se `TRIVY_SOURCE_KEY` non e` impostato, il default e` lo slug di `APP_NAME`
+    - lo stesso giorno riutilizza la stessa cartella e sostituisce il contenuto invece di crearne una nuova
+- la tabella `security_scans` conserva solo tracking tecnico minimo nel database principale dell'applicazione:
+        - `scan_key`
+        - `status`
+        - `scan_mode`
+        - `started_at`
+        - `finished_at`
+        - `raw_report_paths`
+        - `error_message`
 
 - output atteso:
     - se usi `--report-json`, trovi i file in `storage/app/trivy-reports`
-    - `sail artisan security:daily-scan` crea una scan applicativa e collega i report generati
+    - `sail artisan security:daily-scan` crea una scan locale, collega i report raw generati e pubblica un pacchetto composto da:
+        - `manifest.json`
+        - `reports/*.json`
+    - il pacchetto viene pubblicato in:
+        - `{TRIVY_PUBLISH_DIRECTORY}/{TRIVY_SOURCE_KEY}/{YYYY-MM-DD}/manifest.json`
+        - `{TRIVY_PUBLISH_DIRECTORY}/{TRIVY_SOURCE_KEY}/{YYYY-MM-DD}/reports/*.json`
 
 - opzioni extra:
     - puoi passare opzioni Trivy in coda
     - esempio: `./docker/trivy/scan.sh fs --severity HIGH,CRITICAL`
     - esempio con nome file deterministico: `./docker/trivy/scan.sh --report-json --report-prefix manual-test fs`
+
+## Configurazione env Trivy
+- `TRIVY_ENABLED`
+    - abilita o disabilita il job applicativo
+- `TRIVY_COMMAND`
+    - wrapper eseguito dal comando Laravel
+- `TRIVY_DEFAULT_SCAN_MODE`
+    - modalita` di scan usata dal comando applicativo
+- `TRIVY_ALERT_SEVERITIES`
+    - severita` passate a Trivy con `--severity`
+- `TRIVY_REPORTS_DISK`
+    - disk dove Trivy scrive i report raw
+- `TRIVY_REPORTS_DIRECTORY`
+    - directory dei report raw nel disk configurato
+- `TRIVY_PUBLISH_DISK`
+    - disk di destinazione del pacchetto pubblicato
+- `TRIVY_PUBLISH_DIRECTORY`
+    - directory base del filesystem condiviso
+- `TRIVY_SOURCE_KEY`
+    - identificativo sorgente usato nel path del pacchetto
+    - e` il valore che il centrale usera` per collegare la scansione al progetto
+## Test manuale del flusso
+- preparazione:
+    - verificare che il filesystem configurato per `TRIVY_PUBLISH_DISK` sia raggiungibile
+    - verificare che `TRIVY_SOURCE_KEY` abbia un valore esplicito per il progetto
+    - verificare che la tabella `security_scans` esista
+- esecuzione:
+    - `sail artisan security:daily-scan`
+- risultato atteso in caso di successo:
+    - output console finale: `Security daily scan completed.`
+    - almeno un report raw JSON presente in `storage/app/trivy-reports`
+    - una nuova riga in `security_scans` con:
+        - `status = completed`
+        - `scan_key` valorizzato
+        - `finished_at` valorizzato
+        - `error_message = null`
+    - `raw_report_paths` valorizzato con i report pubblicati
+    - presenza di `manifest.json` nel filesystem condiviso nel path:
+        - `{TRIVY_PUBLISH_DIRECTORY}/{TRIVY_SOURCE_KEY}/{YYYY-MM-DD}/manifest.json`
+    - presenza dei report pubblicati nel path:
+        - `{TRIVY_PUBLISH_DIRECTORY}/{TRIVY_SOURCE_KEY}/{YYYY-MM-DD}/reports/`
+- risultato atteso in caso di errore tecnico:
+    - output console finale: `Security daily scan failed.`
+    - nuova riga in `security_scans` con:
+        - `status = failed`
+        - `error_message` valorizzato
+    - nessun requisito di pubblicazione del pacchetto
+
+## Test automatici del flusso
+- test mirato del comando:
+    - `sail artisan test --compact tests/Feature/SecurityDailyScanCommandTest.php`
+    - risultato atteso: `2 passed`
+- test base routing/home:
+    - `sail artisan test --compact tests/Feature/ExampleTest.php`
+    - risultato atteso: `2 passed`
+- se vuoi verificare tutto il progetto:
+    - `sail artisan test --compact`
 
 # Implementazione
 

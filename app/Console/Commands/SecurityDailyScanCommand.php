@@ -6,8 +6,9 @@ use App\Models\Trivy\SecurityScan;
 use App\Support\Trivy\Dto\SecurityScanExecutionResult;
 use App\Support\Trivy\Enums\SecurityScanStatus;
 use App\Support\Trivy\Inteface\SecurityRawReportRepositoryInterface;
-use App\Support\Trivy\SecurityFindingSyncService;
+use App\Support\Trivy\ScanPackageManifestBuilder;
 use App\Support\Trivy\SecurityScanRunnerService;
+use App\Support\Trivy\SharedFilesystemScanPublisher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
@@ -18,11 +19,12 @@ class SecurityDailyScanCommand extends Command {
     private const GENERIC_TRIVY_FAILURE_MESSAGE = 'Trivy command failed.';
 
     protected $signature = 'security:daily-scan';
-    protected $description = 'Run the daily Trivy security scan and store its technical outcome.';
+    protected $description = 'Run the daily Trivy security scan and publish its raw package.';
 
     public function handle(
         SecurityScanRunnerService $scanRunner,
-        SecurityFindingSyncService $findingSyncService,
+        ScanPackageManifestBuilder $scanPackageManifestBuilder,
+        SharedFilesystemScanPublisher $sharedFilesystemScanPublisher,
         SecurityRawReportRepositoryInterface $rawReportRepository,
     ): int {
         if (! config('trivy.enabled')) {
@@ -51,22 +53,35 @@ class SecurityDailyScanCommand extends Command {
                 'error_message' => null,
             ]);
 
-            $delta = $findingSyncService->sync(
-                $scan,
-                $rawReportRepository->reportsForScan($scan),
-            );
+            try {
+                $sharedFilesystemScanPublisher->publish(
+                    $scan,
+                    $scanPackageManifestBuilder->build($scan),
+                );
+            } catch (\Throwable $throwable) {
+                $scan->updateOrFail([
+                    'status' => SecurityScanStatus::Failed,
+                    'finished_at' => Date::now(),
+                    'error_message' => $throwable->getMessage(),
+                ]);
+
+                Log::error('Security daily scan publish failed.', [
+                    'scan_id' => $scan->id,
+                    'scan_key' => $scan->scan_key,
+                    'scan_mode' => $scan->scan_mode,
+                    'exception' => $throwable,
+                ]);
+
+                $this->error('Security daily scan publish failed.');
+                $this->line($throwable->getMessage());
+
+                return SymfonyCommand::FAILURE;
+            }
 
             $scan->updateOrFail([
                 'status' => $scan->status,
                 'finished_at' => $scan->finished_at,
                 'error_message' => null,
-                'critical_count' => $delta['summary']['critical_count'],
-                'high_count' => $delta['summary']['high_count'],
-                'medium_count' => $delta['summary']['medium_count'],
-                'low_count' => $delta['summary']['low_count'],
-                'unknown_count' => $delta['summary']['unknown_count'],
-                'new_count' => $delta['summary']['new_count'],
-                'fixed_count' => $delta['summary']['fixed_count'],
             ]);
 
             $this->info('Security daily scan completed.');

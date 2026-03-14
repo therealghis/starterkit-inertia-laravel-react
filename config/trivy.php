@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Str;
+
 $alertSeverities = env('TRIVY_ALERT_SEVERITIES', 'CRITICAL,HIGH');
 
 if (is_string($alertSeverities)) {
@@ -29,7 +31,10 @@ return [
         'directory' => env('TRIVY_REPORTS_DIRECTORY', 'trivy-reports'),
     ],
 
-    'database' => [
-        'connection' => env('TRIVY_REPORTS_DB_CONNECTION', 'trivy_reports'),
+    'publishing' => [
+        'disk' => env('TRIVY_PUBLISH_DISK', env('TRIVY_REPORTS_DISK', 'trivy_reports')),
+        'directory' => env('TRIVY_PUBLISH_DIRECTORY', 'trivy-packages'),
+        'source' => env('TRIVY_SOURCE_KEY', Str::slug((string) env('APP_NAME', 'laravel'), '-')),
     ],
+
 ];

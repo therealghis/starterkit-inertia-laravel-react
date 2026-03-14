@@ -6,6 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 abstract class TrivyReportsModel extends Model {
     public function getConnectionName(): ?string {
-        return config('trivy.database.connection');
+        return config('database.default');
     }
 }

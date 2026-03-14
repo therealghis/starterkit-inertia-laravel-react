@@ -3,14 +3,13 @@
 namespace App\Support\Trivy;
 
 use App\Support\Trivy\Dto\SecurityScanExecutionResult;
-use App\Support\Trivy\Inteface\SecurityRawReportRepositoryInterface;
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 
 class SecurityScanRunnerService {
     public function __construct(
-        private SecurityRawReportRepositoryInterface $rawReportRepository,
+        private GeneratedReportDiscoveryService $generatedReportDiscoveryService,
     ) {
     }
 
@@ -24,7 +23,7 @@ class SecurityScanRunnerService {
             ->run($this->command($mode, $reportPrefix));
         $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
-        $generatedReportPaths = $this->rawReportRepository->existingReportPaths(
+        $generatedReportPaths = $this->generatedReportDiscoveryService->existingReportPaths(
             $this->expectedReportPaths($mode, $reportPrefix),
         );
         $failureReason = $this->failureReason($result, $generatedReportPaths);

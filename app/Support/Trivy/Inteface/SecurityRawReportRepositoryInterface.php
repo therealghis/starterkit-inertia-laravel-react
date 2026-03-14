@@ -8,8 +8,4 @@ interface SecurityRawReportRepositoryInterface {
     public function existingReportPaths(array $paths): array;
 
     public function storeReportPaths(SecurityScan $scan, array $reportPaths): SecurityScan;
-
-    public function readReport(string $path): array;
-
-    public function reportsForScan(SecurityScan $scan): array;
 }
