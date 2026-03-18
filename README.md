@@ -218,6 +218,8 @@
 - il wrapper del progetto e` `docker/trivy/scan.sh`
 - da host puoi lanciarlo normalmente; il wrapper entra da solo nel container corretto
 - non usa `docker.sock` dentro `laravel.test`
+- per ambienti production/staging host-based esiste anche `docker/trivy/scan-production.sh`
+- `scan-production.sh` usa il binario `trivy` installato sull'host e non prova a entrare nel container Docker
 - i report JSON vengono salvati in `storage/app/trivy-reports`
 - i pacchetti pubblicati vengono salvati nel disk configurato da:
     - `TRIVY_PUBLISH_DISK`
@@ -231,6 +233,7 @@
     - scansione completa che include i Dockerfile: `./docker/trivy/scan.sh all`
     - scansione completa con report JSON: `./docker/trivy/scan.sh --report-json all`
     - scansione completa di default del progetto: `./docker/trivy/scan.sh all-without-dockerfiles`
+    - scansione production host-based del solo progetto: `./docker/trivy/scan-production.sh all`
     - comando applicativo Laravel: `sail artisan security:daily-scan`
 
 - comportamento:
@@ -246,6 +249,7 @@
     - `TRIVY_SOURCE_KEY` e` l'identificativo progetto che il centrale usera` per collegare la scansione
     - se `TRIVY_SOURCE_KEY` non e` impostato, il default e` lo slug di `APP_NAME`
     - lo stesso giorno riutilizza la stessa cartella e sostituisce il contenuto invece di crearne una nuova
+    - `scan-production.sh` e` il wrapper host-side per produzione/staging: esclude Dockerfile, `data/` e `node_modules/`, mantiene i lockfile del progetto e usa lo scanner filesystem `vuln` per un risultato piu` vicino a `composer audit`
 - la tabella `security_scans` conserva solo tracking tecnico minimo nel database principale dell'applicazione:
         - `scan_key`
         - `status`
@@ -340,6 +344,7 @@
     - il disk `s3` usato dal progetto e` quello standard Laravel definito in `config/filesystems.php`
     - per provider S3-compatibili come MinIO, Ceph, Wasabi o simili, in genere servono `AWS_ENDPOINT` e spesso `AWS_USE_PATH_STYLE_ENDPOINT=true`
     - il comando applicativo che pubblica su object storage resta invariato: `sail artisan security:daily-scan`
+    - se il job gira sull'host server invece che nel container, impostare `TRIVY_COMMAND=./docker/trivy/scan-production.sh`
 
 - test manuale consigliato:
     - verificare che le credenziali object storage siano corrette
