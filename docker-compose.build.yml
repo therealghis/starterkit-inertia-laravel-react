@@ -56,7 +56,7 @@ networks:
     sail:
         driver: bridge
 volumes:
-  sprint-tracker-sail-mysql:
+  sail-mysql:
         driver: local
   trivy-cache:
         driver: local

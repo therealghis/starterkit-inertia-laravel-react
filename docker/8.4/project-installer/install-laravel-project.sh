@@ -17,6 +17,7 @@ docker run --rm -it \
   php-8.4-laravel bash -c "
     php composer.phar install && \
     php artisan key:generate && \
+    php artisan storage:link --force && \
     php composer.phar cghooks add --ignore-lock && \
     php composer.phar cghooks update
   "

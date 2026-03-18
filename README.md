@@ -6,6 +6,48 @@
         - creare l'utente e il gruppo "docker" a sistema
     - test: `docker run hello-world`
 
+# Quick Start
+- sequenza rapida per un progetto gia` creato:
+    - `cp .env.example .env`
+    - modificare almeno:
+        - `APP_NAME`
+        - `APP_URL`
+        - `REGISTRY_HOST`
+        - `REGISTRY_PROJECT_PATH`
+        - opzionalmente `TRIVY_SOURCE_KEY` se vuoi forzarlo invece di usare lo slug di `APP_NAME`
+    - `./docker/8.4/project-installer/install-laravel-project.sh`
+    - `docker login -u {username_gitlab} -p {gitlab_token} {REGISTRY_HOST}`
+    - `sail up -d`
+    - `sail artisan migrate`
+    - `sail artisan db:seed`
+    - `nvm install 24`
+    - `nvm use 24`
+    - `yarn`
+    - `yarn build`
+    - `sail artisan optimize:clear`
+
+- sequenza rapida per il primo bootstrap di un nuovo progetto da pubblicare anche sul registry:
+    - `cp .env.example .env`
+    - modificare almeno:
+        - `APP_NAME`
+        - `APP_URL`
+        - `REGISTRY_HOST`
+        - `REGISTRY_PROJECT_PATH`
+        - opzionalmente `TRIVY_SOURCE_KEY` se vuoi forzarlo invece di usare lo slug di `APP_NAME`
+    - `docker compose -f docker-compose.build.yml build --no-cache`
+    - push del repository su GitLab
+    - `./docker/8.4/project-installer/install-laravel-project.sh`
+    - `docker login -u {username_gitlab} -p {gitlab_token} {REGISTRY_HOST}`
+    - `docker compose -f docker-compose.build.yml push`
+    - `sail up -d`
+    - `sail artisan migrate`
+    - `sail artisan db:seed`
+    - `nvm install 24`
+    - `nvm use 24`
+    - `yarn`
+    - `yarn build`
+    - `sail artisan optimize:clear`
+
 # Inizializzazione e configurazione progetto da zero
 - clonare progetto deploy scripts https://dev-git.shellrent.com/shellrent-library/deploy-scripts - project installer
 - creare l'applicazione tramite starter kit a partire da progetto deploy script
@@ -20,6 +62,18 @@
     - `APP_IMAGE_TAG=latest`
     - `DB_IMAGE_TAG=latest`
 - creare il file `.env` copiando il `.env.example` e modificandolo opportunamente
+- il `.env.example` e` gia` predisposto per Sail locale con:
+    - `APP_URL=http://localhost:8000`
+    - `APP_PORT=8000`
+    - `FORWARD_DB_PORT=3306`
+    - `DB_CONNECTION=mysql`
+    - `DB_HOST=mysql`
+    - `DB_PORT=3306`
+    - `DB_DATABASE=laravel`
+    - `DB_USERNAME=sail`
+    - `DB_PASSWORD=password`
+    - `WWWUSER=1000`
+    - `WWWGROUP=1000`
 - avviare docker desktop (se WSL), oppure avviare il servizio docker a sistema (se VM, ma di solito non e` necessario)
 - `docker compose -f docker-compose.build.yml build --no-cache`
     - costruisce le immagini in locale
@@ -28,7 +82,7 @@
     - installa i vendor la prima volta
     - e` necessario per poi usare `vendor/bin/sail`
     - genera una nuova chiave app con artisan
-    - genera il symlink con `storage:link`
+    - genera il symlink con `storage:link --force`
 - aggiungere al file `.bashrc` (o equivalente) un alias per sail: `alias sail='[ -f sail ] && sh sail || sh vendor/bin/sail'`
 - `docker login -u {username_gitlab} -p {gitlab_token} {REGISTRY_HOST}`
     - il token deve essere un token di accesso personale con permessi di lettura e scrittura sul container registry
@@ -49,7 +103,8 @@
 # Inizializzazione progetto gia` creato
 - git clone
 - creare il file `.env` copiando il `.env.example` e modificandolo opportunamente
-    - porta web e database, `APP_URL` compreso
+    - il file esempio e` gia` allineato al run locale con Sail
+    - modificare solo cio` che serve davvero: dominio/app url, credenziali registry, eventuale `TRIVY_SOURCE_KEY`, porte se occupate
 - configurare i placeholder del container registry nel file `.env` se diversi dai default dei compose
     - `REGISTRY_HOST=gitlab.example.com:5050` oppure `registry.gitlab.com`
     - `REGISTRY_PROJECT_PATH=group-or-user/project-slug`
@@ -59,7 +114,7 @@
     - installa i vendor la prima volta
     - e` necessario per poi usare `vendor/bin/sail`
     - genera una nuova chiave app con artisan
-    - genera il symlink con `storage:link`
+    - genera il symlink con `storage:link --force`
 - `docker login -u {username_gitlab} -p {gitlab_token} {REGISTRY_HOST}`
     - per scaricare basta `read_registry`
     - per build + push servono anche `write_registry`
@@ -173,17 +228,19 @@
 - comandi principali:
     - scansione filesystem: `./docker/trivy/scan.sh fs`
     - scansione config/misconfiguration: `./docker/trivy/scan.sh config`
-    - scansione completa di default: `./docker/trivy/scan.sh all`
+    - scansione completa che include i Dockerfile: `./docker/trivy/scan.sh all`
     - scansione completa con report JSON: `./docker/trivy/scan.sh --report-json all`
-    - scansione completa senza Dockerfile del repository: `./docker/trivy/scan.sh all-without-dockerfiles`
+    - scansione completa di default del progetto: `./docker/trivy/scan.sh all-without-dockerfiles`
     - comando applicativo Laravel: `sail artisan security:daily-scan`
 
 - comportamento:
-    - `all` e` la modalita` di default
+    - il comando Laravel usa di default `all-without-dockerfiles`
+    - `all` e` un alias di `all-with-dockerfiles`
     - `all` include anche i Dockerfile del repository
     - `all-without-dockerfiles` esclude i Dockerfile del repository e `vendor/laravel/sail`
     - la directory `data/` usata dal MySQL locale viene esclusa dalle scansioni filesystem
-    - nel passaggio `fs` usa gli scanner `vuln`, `secret` e `misconfig`
+    - `fs` usa gli scanner `vuln`, `secret` e `misconfig`
+    - `all-without-dockerfiles` nel passaggio filesystem usa `vuln` e `misconfig`
     - il comando Laravel passa a Trivy anche `--severity` usando `TRIVY_ALERT_SEVERITIES`
     - dopo la generazione dei report raw il comando Laravel crea `manifest.json` e pubblica tutto nel filesystem condiviso
     - `TRIVY_SOURCE_KEY` e` l'identificativo progetto che il centrale usera` per collegare la scansione
@@ -232,6 +289,65 @@
 - `TRIVY_SOURCE_KEY`
     - identificativo sorgente usato nel path del pacchetto
     - e` il valore che il centrale usera` per collegare la scansione al progetto
+    - se lasciato non impostato, viene usato automaticamente lo slug di `APP_NAME`
+
+## Trivy su object storage condiviso
+- obiettivo consigliato:
+    - mantenere i report raw locali su disco applicativo
+    - pubblicare il pacchetto finale `manifest.json` + `reports/*.json` su object storage condiviso tra tutti i progetti
+- il progetto e` gia` compatibile con questo flusso tramite il filesystem Laravel `s3`
+- configurazione tipica consigliata:
+    - `TRIVY_REPORTS_DISK=trivy_reports`
+    - `TRIVY_REPORTS_DIRECTORY=trivy-reports`
+    - `TRIVY_PUBLISH_DISK=s3`
+    - `TRIVY_PUBLISH_DIRECTORY=trivy-packages`
+    - lasciare `TRIVY_SOURCE_KEY` non impostato per usare lo slug di `APP_NAME`, oppure valorizzarlo esplicitamente se vuoi un identificativo fisso
+
+- variabili object storage da configurare in `.env`:
+    - `AWS_ACCESS_KEY_ID`
+    - `AWS_SECRET_ACCESS_KEY`
+    - `AWS_DEFAULT_REGION`
+    - `AWS_BUCKET`
+    - `AWS_ENDPOINT`
+    - `AWS_URL` se vuoi forzare una URL pubblica/base custom
+    - `AWS_USE_PATH_STYLE_ENDPOINT=true` se il provider S3-compatibile lo richiede
+
+- esempio completo con bucket condiviso:
+    - `APP_NAME="Project Alpha"`
+    - `TRIVY_REPORTS_DISK=trivy_reports`
+    - `TRIVY_REPORTS_DIRECTORY=trivy-reports`
+    - `TRIVY_PUBLISH_DISK=s3`
+    - `TRIVY_PUBLISH_DIRECTORY=trivy-packages`
+    - `AWS_ACCESS_KEY_ID=your-access-key`
+    - `AWS_SECRET_ACCESS_KEY=your-secret-key`
+    - `AWS_DEFAULT_REGION=eu-central-1`
+    - `AWS_BUCKET=shared-security-reports`
+    - `AWS_ENDPOINT=https://s3.example.com`
+    - `AWS_USE_PATH_STYLE_ENDPOINT=true`
+
+- risultato atteso con questa configurazione:
+    - i raw report restano disponibili localmente in `storage/app/trivy-reports`
+    - il pacchetto pubblicato finisce nel bucket object storage in:
+        - `trivy-packages/{TRIVY_SOURCE_KEY oppure slug(APP_NAME)}/{YYYY-MM-DD}/manifest.json`
+        - `trivy-packages/{TRIVY_SOURCE_KEY oppure slug(APP_NAME)}/{YYYY-MM-DD}/reports/*.json`
+    - esempio pratico se `APP_NAME="Project Alpha"` e `TRIVY_SOURCE_KEY` non e` impostato:
+        - `trivy-packages/project-alpha/2026-03-18/manifest.json`
+        - `trivy-packages/project-alpha/2026-03-18/reports/*.json`
+
+- note operative:
+    - `TRIVY_REPORTS_DISK` e `TRIVY_PUBLISH_DISK` possono essere diversi: e` l'approccio consigliato
+    - se imposti anche `TRIVY_REPORTS_DISK=s3`, allora pure i raw report verranno scritti su object storage invece che nel filesystem locale
+    - il disk `s3` usato dal progetto e` quello standard Laravel definito in `config/filesystems.php`
+    - per provider S3-compatibili come MinIO, Ceph, Wasabi o simili, in genere servono `AWS_ENDPOINT` e spesso `AWS_USE_PATH_STYLE_ENDPOINT=true`
+    - il comando applicativo che pubblica su object storage resta invariato: `sail artisan security:daily-scan`
+
+- test manuale consigliato:
+    - verificare che le credenziali object storage siano corrette
+    - eseguire `sail artisan security:daily-scan`
+    - verificare la presenza nel bucket di:
+        - `trivy-packages/{source}/{YYYY-MM-DD}/manifest.json`
+        - `trivy-packages/{source}/{YYYY-MM-DD}/reports/*.json`
+    - verificare che in `security_scans.raw_report_paths` siano presenti i report collegati alla scan locale
 ## Test manuale del flusso
 - preparazione:
     - verificare che il filesystem configurato per `TRIVY_PUBLISH_DISK` sia raggiungibile
