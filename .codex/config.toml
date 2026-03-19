@@ -1,4 +1,4 @@
 [mcp_servers.laravel-boost]
-command = "docker"
-args = ["exec", "-i", "-u", "www-data", "-w", "/var/www/html", "laravel-inertia-react-laravel.test-1", "php", "artisan", "boost:mcp"]
+command = "./vendor/bin/sail"
+args = ["artisan", "boost:mcp"]
 cwd = "/home/devel/laravel-inertia-react"

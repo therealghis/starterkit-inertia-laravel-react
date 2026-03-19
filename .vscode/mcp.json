@@ -1,0 +1,12 @@
+{
+    "servers": {
+        "laravel-boost": {
+            "command": "wsl.exe",
+            "args": [
+                "/bin/bash",
+                "-lc",
+                "cd /home/devel/laravel-inertia-react && ./vendor/bin/sail artisan boost:mcp"
+            ]
+        }
+    }
+}
