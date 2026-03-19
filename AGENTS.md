@@ -28,6 +28,8 @@ This project has domain-specific skills available. You MUST activate the relevan
 
 - `wayfinder-development` — Activates whenever referencing backend routes in frontend components. Use when importing from @/actions or @/routes, calling Laravel routes from TypeScript, or working with Wayfinder route functions.
 - `developing-with-fortify` — Laravel Fortify headless authentication backend development. Activate when implementing authentication features including login, registration, password reset, email verification, two-factor authentication (2FA/TOTP), profile updates, headless auth, authentication scaffolding, or auth guards in Laravel applications.
+- `inertia-react-development` — Inertia.js v2 React client-side development. Activate when creating or modifying React pages, forms, or navigation; using `<Link>`, `<Form>`, `useForm`, or `router`; or working with deferred props, prefetching, or polling.
+- `tailwindcss-development` — Tailwind CSS v4 styling and UI work. Activate when adding or changing styles, layout, spacing, responsive behavior, dark mode, gradients, typography, or other visual/UI changes.
 
 ## Conventions
 
@@ -143,8 +145,12 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 # Test Enforcement
 
-- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
-- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
+- Do not write tests for every change by default.
+- Tests are required for features with security impact, authorization or authentication logic, sensitive data handling, critical business rules, or workflows where regressions would be hard to detect manually.
+- Tests are also required for logic that is complex, stateful, multi-step, failure-prone, or difficult to debug confidently by inspection alone.
+- Tests are not required by default for simple UI copy changes, low-risk styling updates, straightforward markup adjustments, or mechanical refactors with limited behavioral risk.
+- When tests are not added, perform an appropriate minimal verification for the scope of the change.
+- When tests are warranted, run the minimum number of tests needed to ensure quality and speed. Use `php artisan test --compact` with a specific filename or filter.
 
 === inertia-laravel/core rules ===
 
@@ -267,9 +273,9 @@ Wayfinder generates TypeScript functions for Laravel routes. Import from `@/acti
 
 - This application uses PHPUnit for testing. All tests must be written as PHPUnit classes. Use `php artisan make:test --phpunit {name}` to create a new test.
 - If you see a test using "Pest", convert it to PHPUnit.
-- Every time a test has been updated, run that singular test.
-- When the tests relating to your feature are passing, ask the user if they would like to also run the entire test suite to make sure everything is still passing.
-- Tests should cover all happy paths, failure paths, and edge cases.
+- Every time a test has been added or updated, run that singular test.
+- When the tests relating to a tested feature are passing, ask the user if they would like to also run the entire test suite to make sure everything is still passing.
+- When a feature merits tests, cover the meaningful happy paths, failure paths, and edge cases for the risk level of that feature.
 - You must not remove any tests or test files from the tests directory without approval. These are not temporary or helper files; these are core to the application.
 
 ## Running Tests
