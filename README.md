@@ -283,17 +283,89 @@
 - `TRIVY_ALERT_SEVERITIES`
     - severita` passate a Trivy con `--severity`
 - `TRIVY_REPORTS_DISK`
-    - disk dove Trivy scrive i report raw
+    - nome del filesystem Laravel usato per salvare i report raw generati da Trivy
+    - non e` un path e non e` il nome della cartella fisica: e` il nome logico del disk in `config/filesystems.php`
+    - il comando applicativo usa questo disk per:
+        - cercare i file JSON generati da Trivy
+        - salvare in database i riferimenti ai raw report
+        - leggere i raw report quando deve pubblicare il package finale
+    - esempio:
+        - se `TRIVY_REPORTS_DISK=trivy_reports` e quel disk ha root `storage/app`, allora la base reale del filesystem e` `storage/app`
 - `TRIVY_REPORTS_DIRECTORY`
-    - directory dei report raw nel disk configurato
+    - sottocartella relativa, dentro `TRIVY_REPORTS_DISK`, dove Trivy salva i report raw JSON
+    - non va pensata come path assoluto: e` un path relativo alla root del disk
+    - esempio:
+        - con `TRIVY_REPORTS_DISK=trivy_reports`
+        - root del disk = `storage/app`
+        - `TRIVY_REPORTS_DIRECTORY=trivy-reports`
+        - il path reale dei raw report diventa `storage/app/trivy-reports/...`
+    - i file raw attesi hanno nomi come:
+        - `trivy-reports/{scan_key}-fs.json`
+        - `trivy-reports/{scan_key}-config.json`
 - `TRIVY_PUBLISH_DISK`
-    - disk di destinazione del pacchetto pubblicato
+    - nome del filesystem Laravel dove viene pubblicato il package finale da condividere con il sistema centrale
+    - il package pubblicato contiene:
+        - `manifest.json`
+        - `reports/*.json`
+    - puo` essere uguale a `TRIVY_REPORTS_DISK` oppure diverso
+    - caso consigliato:
+        - raw report su disk locale
+        - package pubblicato su disk condiviso, ad esempio `s3`
+    - se usi lo stesso disk per raw e publish, nello stesso filesystem avrai due aree logiche diverse:
+        - `trivy-reports/...`
+        - `trivy-packages/...`
 - `TRIVY_PUBLISH_DIRECTORY`
-    - directory base del filesystem condiviso
+    - directory base, relativa a `TRIVY_PUBLISH_DISK`, dove viene scritto il package finale
+    - dentro questa directory il sistema crea automaticamente una struttura per sorgente e giorno scansione
+    - formato finale:
+        - `{TRIVY_PUBLISH_DIRECTORY}/{TRIVY_SOURCE_KEY}/{YYYY-MM-DD}/manifest.json`
+        - `{TRIVY_PUBLISH_DIRECTORY}/{TRIVY_SOURCE_KEY}/{YYYY-MM-DD}/reports/*.json`
+    - esempio:
+        - `TRIVY_PUBLISH_DIRECTORY=trivy-packages`
+        - `TRIVY_SOURCE_KEY=my-project`
+        - scan del `2026-03-21`
+        - risultato:
+            - `trivy-packages/my-project/2026-03-21/manifest.json`
+            - `trivy-packages/my-project/2026-03-21/reports/*.json`
 - `TRIVY_SOURCE_KEY`
-    - identificativo sorgente usato nel path del pacchetto
-    - e` il valore che il centrale usera` per collegare la scansione al progetto
+    - identificativo stabile del progetto dentro il filesystem condiviso
+    - entra nel path pubblicato e serve al sistema centrale per capire a quale progetto appartiene il package
+    - e` il segmento di path subito sotto `TRIVY_PUBLISH_DIRECTORY`
+    - esempio:
+        - `TRIVY_PUBLISH_DIRECTORY=trivy-packages`
+        - `TRIVY_SOURCE_KEY=project-alpha`
+        - path pubblicato: `trivy-packages/project-alpha/{YYYY-MM-DD}/...`
     - se lasciato non impostato, viene usato automaticamente lo slug di `APP_NAME`
+
+- regola pratica da ricordare:
+    - `TRIVY_REPORTS_*` controlla dove vivono i raw report generati da Trivy
+    - `TRIVY_PUBLISH_*` controlla dove viene pubblicato il package finale per il centrale
+    - `TRIVY_SOURCE_KEY` controlla il nome della cartella progetto nel package pubblicato
+
+- esempio completo con raw locali e package pubblicato sullo stesso filesystem locale:
+    - `TRIVY_REPORTS_DISK=trivy_reports`
+    - `TRIVY_REPORTS_DIRECTORY=trivy-reports`
+    - `TRIVY_PUBLISH_DISK=trivy_reports`
+    - `TRIVY_PUBLISH_DIRECTORY=trivy-packages`
+    - `TRIVY_SOURCE_KEY=my-project`
+    - con root del disk = `storage/app`, il risultato reale sara`:
+        - raw report:
+            - `storage/app/trivy-reports/*.json`
+        - package pubblicato:
+            - `storage/app/trivy-packages/my-project/{YYYY-MM-DD}/manifest.json`
+            - `storage/app/trivy-packages/my-project/{YYYY-MM-DD}/reports/*.json`
+
+- esempio completo con raw locali e package su object storage:
+    - `TRIVY_REPORTS_DISK=trivy_reports`
+    - `TRIVY_REPORTS_DIRECTORY=trivy-reports`
+    - `TRIVY_PUBLISH_DISK=s3`
+    - `TRIVY_PUBLISH_DIRECTORY=trivy-packages`
+    - `TRIVY_SOURCE_KEY=my-project`
+    - risultato:
+        - raw report locali in `storage/app/trivy-reports/*.json`
+        - package pubblicato nel bucket in:
+            - `trivy-packages/my-project/{YYYY-MM-DD}/manifest.json`
+            - `trivy-packages/my-project/{YYYY-MM-DD}/reports/*.json`
 
 ## Trivy su object storage condiviso
 - obiettivo consigliato:
