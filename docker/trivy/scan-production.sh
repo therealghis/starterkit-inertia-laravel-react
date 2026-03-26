@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_PATH="${TRIVY_PROJECT_PATH:-${PROJECT_ROOT}}"
 TRIVY_REPORT_DIR="${PROJECT_ROOT}/storage/app/trivy-reports"
+TRIVY_CACHE_DIR="${TRIVY_CACHE_DIR:-${PROJECT_ROOT}/trivy_cache}"
 GENERATE_JSON_REPORT=false
 REPORT_PREFIX=""
 
@@ -32,6 +33,16 @@ Esempi:
   ./docker/trivy/scan-production.sh fs --severity HIGH,CRITICAL
   ./docker/trivy/scan-production.sh --report-json --report-prefix nightly all
 EOF
+}
+
+prepare_trivy_cache() {
+    mkdir -p "${TRIVY_CACHE_DIR}"
+    chmod 700 "${TRIVY_CACHE_DIR}"
+    rm -rf "${TRIVY_CACHE_DIR}/db" "${TRIVY_CACHE_DIR}/log"
+}
+
+cleanup_trivy_cache() {
+    rm -rf "${TRIVY_CACHE_DIR}/db" "${TRIVY_CACHE_DIR}/log"
 }
 
 ensure_trivy_installed() {
@@ -122,7 +133,13 @@ run_trivy() {
         trivy_args+=(--skip-dirs "${skip_dirs_value}")
     fi
 
-    trivy "${trivy_args[@]}" "$@"
+    (
+        trap cleanup_trivy_cache EXIT
+        prepare_trivy_cache
+        umask 077
+
+        TRIVY_CACHE_DIR="${TRIVY_CACHE_DIR}" trivy "${trivy_args[@]}" "$@"
+    )
 }
 
 while [[ $# -gt 0 ]]; do

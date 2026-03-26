@@ -9,6 +9,7 @@ PROJECT_DOCKERFILE_SKIP_LIST="${PROJECT_PATH}/docker/8.2/Dockerfile,${PROJECT_PA
 PROJECT_RUNTIME_SKIP_DIRS="${PROJECT_PATH}/data"
 VENDOR_SKIP_DIRS="${PROJECT_PATH}/vendor/laravel/sail"
 TRIVY_REPORT_DIR="${PROJECT_ROOT}/storage/app/trivy-reports"
+TRIVY_CACHE_DIR="${TRIVY_CACHE_DIR:-${PROJECT_ROOT}/trivy_cache}"
 LARAVEL_TEST_SERVICE="${LARAVEL_TEST_SERVICE:-laravel.test}"
 GENERATE_JSON_REPORT=false
 REPORT_PREFIX=""
@@ -20,6 +21,7 @@ if [[ "${LARAVEL_SAIL:-}" == "1" || -f "/.dockerenv" ]]; then
     PROJECT_DOCKERFILE_SKIP_LIST="${PROJECT_PATH}/docker/8.2/Dockerfile,${PROJECT_PATH}/docker/8.3/Dockerfile,${PROJECT_PATH}/docker/8.3/project-installer/Dockerfile,${PROJECT_PATH}/docker/8.4/Dockerfile,${PROJECT_PATH}/docker/8.4/project-installer/Dockerfile,${PROJECT_PATH}/docker/mysql/Dockerfile"
     PROJECT_RUNTIME_SKIP_DIRS="${PROJECT_PATH}/data"
     VENDOR_SKIP_DIRS="${PROJECT_PATH}/vendor/laravel/sail"
+    TRIVY_CACHE_DIR="${TRIVY_CACHE_DIR:-/var/www/html/trivy_cache}"
 fi
 
 ORIGINAL_ARGS=("$@")
@@ -45,6 +47,22 @@ Esempi:
   ./docker/trivy/scan.sh all-without-dockerfiles
   ./docker/trivy/scan.sh fs --severity HIGH,CRITICAL
 EOF
+}
+
+prepare_trivy_cache() {
+    mkdir -p "${TRIVY_CACHE_DIR}"
+    chmod 700 "${TRIVY_CACHE_DIR}"
+    rm -rf "${TRIVY_CACHE_DIR}/db" "${TRIVY_CACHE_DIR}/log"
+}
+
+cleanup_trivy_cache() {
+    rm -rf "${TRIVY_CACHE_DIR}/db" "${TRIVY_CACHE_DIR}/log"
+}
+
+prepare_host_trivy_cache_mount() {
+    mkdir -p "${TRIVY_CACHE_DIR}"
+    chmod 700 "${TRIVY_CACHE_DIR}"
+    rm -rf "${TRIVY_CACHE_DIR}/db" "${TRIVY_CACHE_DIR}/log"
 }
 
 build_report_args() {
@@ -80,11 +98,20 @@ run_trivy() {
     fi
 
     if [[ "${RUNNING_INSIDE_CONTAINER}" == "true" ]]; then
-        trivy \
-            "${report_args[@]}" \
-            "$@"
+        (
+            trap cleanup_trivy_cache EXIT
+            prepare_trivy_cache
+            umask 077
+
+            trivy \
+                "${report_args[@]}" \
+                "$@"
+        )
+
         return 0
     fi
+
+    prepare_host_trivy_cache_mount
 
     docker compose -f "${PROJECT_ROOT}/docker-compose.yml" exec -T \
         -e TRIVY_PROJECT_PATH=/var/www/html \

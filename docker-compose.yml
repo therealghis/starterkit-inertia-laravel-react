@@ -13,10 +13,9 @@ services:
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
-            TRIVY_CACHE_DIR: /tmp/trivy-cache
+            TRIVY_CACHE_DIR: /var/www/html/trivy_cache
         volumes:
             - '.:/var/www/html'
-            - 'trivy-cache:/tmp/trivy-cache'
         networks:
             - sail
         depends_on:
@@ -50,6 +49,4 @@ networks:
         driver: bridge
 volumes:
     sail-mysql:
-        driver: local
-    trivy-cache:
         driver: local
