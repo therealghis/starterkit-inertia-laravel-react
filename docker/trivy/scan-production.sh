@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_PATH="${TRIVY_PROJECT_PATH:-${PROJECT_ROOT}}"
 TRIVY_REPORT_DIR="${PROJECT_ROOT}/storage/app/trivy-reports"
-TRIVY_CACHE_DIR="${TRIVY_CACHE_DIR:-${PROJECT_ROOT}/trivy_cache}"
+TRIVY_CACHE_DIR="/tmp/trivy-cache-$(id -u)"
 GENERATE_JSON_REPORT=false
 REPORT_PREFIX=""
 
@@ -35,8 +35,60 @@ Esempi:
 EOF
 }
 
+log_info() {
+    printf '[INFO] %s\n' "$1" >&2
+}
+
+log_check() {
+    printf '[CHECK] %s\n' "$1" >&2
+}
+
+log_command() {
+    local -a command_parts=("$@")
+    local formatted_command=""
+
+    printf -v formatted_command '%q ' "${command_parts[@]}"
+    printf '[INFO] Command: %s\n' "${formatted_command% }" >&2
+}
+
+fail() {
+    printf '[ERROR] %s\n' "$1" >&2
+    exit 1
+}
+
+ensure_directory_writable() {
+    local directory="$1"
+    local label="$2"
+
+    if ! mkdir -p "${directory}"; then
+        fail "Cannot create ${label}: ${directory}"
+    fi
+
+    if [[ ! -d "${directory}" ]]; then
+        fail "${label} is not a directory: ${directory}"
+    fi
+
+    if [[ ! -w "${directory}" ]]; then
+        fail "${label} is not writable by user $(id -un): ${directory}"
+    fi
+
+    log_check "${label} writable: ${directory}"
+}
+
+ensure_project_path_readable() {
+    if [[ ! -d "${PROJECT_PATH}" ]]; then
+        fail "Project path not found: ${PROJECT_PATH}"
+    fi
+
+    if [[ ! -r "${PROJECT_PATH}" ]]; then
+        fail "Project path is not readable by user $(id -un): ${PROJECT_PATH}"
+    fi
+
+    log_check "Project path readable: ${PROJECT_PATH}"
+}
+
 prepare_trivy_cache() {
-    mkdir -p "${TRIVY_CACHE_DIR}"
+    ensure_directory_writable "${TRIVY_CACHE_DIR}" 'Trivy cache directory'
     chmod 700 "${TRIVY_CACHE_DIR}"
     rm -rf "${TRIVY_CACHE_DIR}/db" "${TRIVY_CACHE_DIR}/log"
 }
@@ -47,9 +99,10 @@ cleanup_trivy_cache() {
 
 ensure_trivy_installed() {
     if ! command -v trivy >/dev/null 2>&1; then
-        echo "Trivy non e' installato sull'host o non e' nel PATH." >&2
-        exit 1
+        fail "Trivy is not installed on the host or is not available in PATH"
     fi
+
+    log_check 'Command available: trivy'
 }
 
 dockerfile_skip_list() {
@@ -93,7 +146,7 @@ build_report_args() {
         return 0
     fi
 
-    mkdir -p "${TRIVY_REPORT_DIR}"
+    ensure_directory_writable "${TRIVY_REPORT_DIR}" 'Trivy report directory'
 
     local report_filename
 
@@ -113,6 +166,8 @@ run_trivy() {
     shift
 
     local report_args=()
+    local trivy_command="$1"
+    shift
     local skip_dirs_value
     local dockerfile_skip_value
 
@@ -135,10 +190,17 @@ run_trivy() {
 
     (
         trap cleanup_trivy_cache EXIT
+        ensure_project_path_readable
         prepare_trivy_cache
         umask 077
 
-        TRIVY_CACHE_DIR="${TRIVY_CACHE_DIR}" trivy "${trivy_args[@]}" "$@"
+        log_info "Running Trivy on host"
+        log_info "Mode: ${mode}"
+        log_info "Project path: ${PROJECT_PATH}"
+        log_info "Cache directory: ${TRIVY_CACHE_DIR}"
+        log_command trivy "${trivy_command}" "${trivy_args[@]}" "$@"
+
+        TRIVY_CACHE_DIR="${TRIVY_CACHE_DIR}" trivy "${trivy_command}" "${trivy_args[@]}" "$@"
     )
 }
 
@@ -177,16 +239,16 @@ case "${mode}" in
         ;;
     fs)
         ensure_trivy_installed
-        run_trivy fs fs --scanners vuln "${PROJECT_PATH}" "$@"
+        run_trivy fs fs --scanners vuln "$@" "${PROJECT_PATH}"
         ;;
     config)
         ensure_trivy_installed
-        run_trivy config config "${PROJECT_PATH}" "$@"
+        run_trivy config config "$@" "${PROJECT_PATH}"
         ;;
     all)
         ensure_trivy_installed
-        run_trivy all-fs fs --scanners vuln "${PROJECT_PATH}" "$@"
-        run_trivy all-config config "${PROJECT_PATH}" "$@"
+        run_trivy all-fs fs --scanners vuln "$@" "${PROJECT_PATH}"
+        run_trivy all-config config "$@" "${PROJECT_PATH}"
         ;;
     *)
         usage

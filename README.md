@@ -1,3 +1,45 @@
+# Descrizione del progetto
+- applicazione Laravel 12 con frontend Inertia React e autenticazione Fortify
+- il progetto include:
+    - login, registrazione, reset password, verifica email e two-factor authentication
+    - localizzazione `en` / `it` condivisa tra backend e frontend
+    - componenti UI riusabili per layout, form, tabelle e stati vuoti
+    - integrazione Wayfinder per route/action TypeScript
+    - un flusso applicativo dedicato alle scansioni sicurezza con Trivy
+- il dominio specifico del progetto, oltre allo starter kit Laravel/Inertia, e` il modulo Trivy:
+    - esegue scansioni di sicurezza
+    - genera report raw JSON
+    - costruisce un `manifest.json`
+    - pubblica un package finale su filesystem locale o condiviso
+    - salva nel database solo il tracking tecnico minimo della scan
+
+# Come utilizzarlo
+- uso quotidiano dell'applicazione:
+    - avviare l'ambiente
+    - effettuare login
+    - usare dashboard, impostazioni profilo, password, aspetto, lingua e 2FA
+- uso come starter kit applicativo:
+    - aggiungere le pagine dominio in `resources/js/pages`
+    - aggiungere route Laravel e rigenerare Wayfinder quando serve
+    - riusare componenti e layout gia` presenti
+- uso come sorgente di scansioni Trivy:
+    - eseguire scan manuali con gli script in `docker/trivy/`
+    - oppure usare il comando applicativo `sail artisan security:daily-scan`
+    - recuperare i raw report in `storage/app/trivy-reports`
+    - recuperare il package pubblicato in `{TRIVY_PUBLISH_DIRECTORY}/{TRIVY_SOURCE_KEY}/{YYYY-MM-DD}/`
+
+# Flusso tipico
+- per usare l'applicazione in locale:
+    - inizializzare `.env`
+    - installare vendor e preparare Sail
+    - avviare container e migrazioni
+    - buildare gli asset frontend
+    - accedere con l'utente seedato
+- per usare il modulo sicurezza:
+    - configurare le variabili `TRIVY_*`
+    - lanciare una scan manuale oppure schedulata
+    - verificare output console, raw report e package pubblicato
+
 # Preparazione
 - installare docker (seguire il readme) oppure installare i servizi manualmente
 - Docker
@@ -211,7 +253,7 @@
     - creare il manifest del pacchetto di scansione
     - pubblicare report + manifest su filesystem condiviso
     - tracciare l'esito tecnico minimo locale nella tabella `security_scans`
-- la logica centrale da spostare nel nuovo progetto dedicato e` stata raccolta in `centrale/`
+- la logica di aggregazione, analisi e reporting avanzato non vive piu` in questo repository
 
 ## Trivy in locale
 - Trivy gira dentro il container `laravel.test`
@@ -455,7 +497,7 @@
 ## Test automatici del flusso
 - test mirato del comando:
     - `sail artisan test --compact tests/Feature/SecurityDailyScanCommandTest.php`
-    - risultato atteso: `2 passed`
+    - risultato atteso: `3 passed`
 - test base routing/home:
     - `sail artisan test --compact tests/Feature/ExampleTest.php`
     - risultato atteso: `2 passed`
