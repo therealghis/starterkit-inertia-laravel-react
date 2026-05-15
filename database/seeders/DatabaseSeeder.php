@@ -18,5 +18,10 @@ class DatabaseSeeder extends Seeder {
             'email_verified_at' => now(),
             'password' => Hash::make(config('starter.seed_user.password')),
         ]);
+
+        $this->call([
+            MergeAcquisitionEconomicActivitySeeder::class,
+            MergeAcquisitionContactRequestEmailSeeder::class,
+        ]);
     }
 }
