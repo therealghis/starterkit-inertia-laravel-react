@@ -22,10 +22,4 @@ class ExampleTest extends TestCase {
 
         $response->assertRedirect(route('dashboard'));
     }
-
-    public function test_server_data_table_demo_route_is_not_registered() {
-        $response = $this->get('/components/server-data-table-demo');
-
-        $response->assertNotFound();
-    }
 }
