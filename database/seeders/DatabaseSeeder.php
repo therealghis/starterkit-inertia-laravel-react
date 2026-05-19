@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder {
         ]);
 
         $this->call([
+            TestUsersSeeder::class,
             MergeAcquisitionEconomicActivitySeeder::class,
             MergeAcquisitionContactRequestEmailSeeder::class,
         ]);
