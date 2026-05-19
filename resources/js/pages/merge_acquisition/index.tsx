@@ -1,14 +1,19 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import type { ColumnDef } from '@tanstack/react-table';
 import {
-    ArrowRight,
     BriefcaseBusiness,
     Building2,
     ChevronRight,
     CirclePlus,
     Landmark,
+    LayoutList,
     ScanSearch,
 } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import type { DataTableFilterDef } from '@/components/data-table-filters';
+import { ServerDataTable } from '@/components/server-data-table';
+import type { ServerTableQuery } from '@/components/server-data-table';
 import { dashboard } from '@/routes';
 import { index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
 import type { BreadcrumbItem } from '@/types';
@@ -55,7 +60,46 @@ type Summary = {
 type MergeAcquisitionIndexProps = {
     activeType: string | null;
     operationModes: OperationMode[];
+    opportunities: OpportunityRow[];
+    tableState: TableState;
+    rowCount: number;
+    pageCount: number;
+    filterOptions: FilterOptions;
     summary: Summary;
+};
+
+type OpportunityRow = {
+    id: number;
+    opportunityCode: string;
+    operationType: string;
+    activitySector: string;
+    legalEntity: string;
+    activityDescription: string;
+    atecoCode: string;
+    headquarters: string;
+    favorite: boolean;
+};
+
+type TableState = {
+    columnFilters: Array<{
+        id: string;
+        value: boolean | number | string | string[];
+    }>;
+    sorting: Array<{
+        id: string;
+        desc: boolean;
+    }>;
+    pagination: {
+        pageIndex: number;
+        pageSize: number;
+    };
+};
+
+type FilterOptions = {
+    economicActivities: Array<{
+        label: string;
+        value: string;
+    }>;
 };
 
 const modeIcons = {
@@ -71,6 +115,11 @@ const modeCardTones = {
 export default function MergeAcquisitionIndex({
     activeType,
     operationModes,
+    opportunities,
+    tableState,
+    rowCount,
+    pageCount,
+    filterOptions,
     summary,
 }: MergeAcquisitionIndexProps) {
     const breadcrumbs: BreadcrumbItem[] = [
@@ -83,6 +132,204 @@ export default function MergeAcquisitionIndex({
             href: mergeAcquisitionIndex(),
         },
     ];
+
+    const filters: DataTableFilterDef[] = [
+        {
+            kind: 'text',
+            columnId: 'opportunityCode',
+            label: 'Codice opportunità',
+            placeholder: 'Es. MA-2026-001',
+        },
+        {
+            kind: 'select',
+            columnId: 'operationType',
+            label: 'Tipo operazione',
+            options: [
+                { label: 'Buy-side', value: 'BUY_SIDE' },
+                { label: 'Sell-side', value: 'SELL_SIDE' },
+            ],
+        },
+        {
+            kind: 'select',
+            columnId: 'activitySector',
+            label: 'Settore attività',
+            options: filterOptions.economicActivities,
+        },
+        {
+            kind: 'text',
+            columnId: 'legalEntity',
+            label: 'Forma giuridica',
+            placeholder: 'Es. Srl',
+        },
+        {
+            kind: 'text',
+            columnId: 'activityDescription',
+            label: 'Descrizione attività',
+            placeholder: 'Cerca nella descrizione',
+        },
+        {
+            kind: 'text',
+            columnId: 'atecoCode',
+            label: 'Codice ateco',
+            placeholder: 'Es. 62.01',
+        },
+        {
+            kind: 'text',
+            columnId: 'headquarters',
+            label: 'Sede',
+            placeholder: 'Provincia o paese',
+        },
+        {
+            kind: 'boolean',
+            columnId: 'favorite',
+            label: 'Preferito',
+            trueLabel: 'Sì',
+            falseLabel: 'No',
+        },
+    ];
+
+    const columns = useMemo<ColumnDef<OpportunityRow>[]>(
+        () => [
+            {
+                accessorKey: 'opportunityCode',
+                header: 'Codice',
+                cell: ({ row }) => (
+                    <div className="space-y-1">
+                        <div className="font-medium tracking-tight">
+                            {row.original.opportunityCode}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            Opportunity ID {row.original.id}
+                        </div>
+                    </div>
+                ),
+            },
+            {
+                accessorKey: 'operationType',
+                header: 'Tipo',
+                cell: ({ row }) => (
+                    <Badge
+                        variant={
+                            row.original.operationType === 'BUY_SIDE'
+                                ? 'default'
+                                : 'secondary'
+                        }
+                        className="rounded-full px-3 py-1"
+                    >
+                        {row.original.operationType === 'BUY_SIDE'
+                            ? 'Buy-side'
+                            : 'Sell-side'}
+                    </Badge>
+                ),
+            },
+            {
+                accessorKey: 'activitySector',
+                header: 'Settore',
+                enableSorting: false,
+            },
+            {
+                accessorKey: 'legalEntity',
+                header: 'Forma giuridica',
+            },
+            {
+                accessorKey: 'activityDescription',
+                header: 'Descrizione attività',
+                cell: ({ row }) => (
+                    <div className="max-w-[28rem] truncate text-sm text-muted-foreground">
+                        {row.original.activityDescription}
+                    </div>
+                ),
+            },
+            {
+                accessorKey: 'atecoCode',
+                header: 'Ateco',
+            },
+            {
+                accessorKey: 'headquarters',
+                header: 'Sede',
+                enableSorting: false,
+            },
+            {
+                accessorKey: 'favorite',
+                header: 'Preferito',
+                enableSorting: false,
+                cell: ({ row }) => (
+                    <Badge
+                        variant={row.original.favorite ? 'default' : 'outline'}
+                        className="rounded-full px-3 py-1"
+                    >
+                        {row.original.favorite ? 'Sì' : 'No'}
+                    </Badge>
+                ),
+            },
+        ],
+        [],
+    );
+
+    const handleQueryChange = useCallback(
+        (query: ServerTableQuery) => {
+            const requestQuery: Record<string, boolean | number | string> = {
+                page: query.pagination.pageIndex + 1,
+                page_size: query.pagination.pageSize,
+            };
+
+            const activeSorting = query.sorting[0];
+
+            if (activeSorting) {
+                requestQuery.sort = activeSorting.id;
+                requestQuery.direction = activeSorting.desc ? 'desc' : 'asc';
+            }
+
+            for (const filter of query.columnFilters) {
+                if (filter.id === 'opportunityCode' && typeof filter.value === 'string' && filter.value !== '') {
+                    requestQuery.identification_code = filter.value;
+                }
+
+                if (filter.id === 'operationType' && typeof filter.value === 'string' && filter.value !== '') {
+                    requestQuery.intent_type = filter.value;
+                }
+
+                if (filter.id === 'activitySector' && typeof filter.value === 'string' && filter.value !== '') {
+                    requestQuery.economic_activity_id = filter.value;
+                }
+
+                if (filter.id === 'legalEntity' && typeof filter.value === 'string' && filter.value !== '') {
+                    requestQuery.legal_entity = filter.value;
+                }
+
+                if (filter.id === 'activityDescription' && typeof filter.value === 'string' && filter.value !== '') {
+                    requestQuery.activity_description = filter.value;
+                }
+
+                if (filter.id === 'atecoCode' && typeof filter.value === 'string' && filter.value !== '') {
+                    requestQuery.ateco_code = filter.value;
+                }
+
+                if (filter.id === 'headquarters' && typeof filter.value === 'string' && filter.value !== '') {
+                    requestQuery.headquarters = filter.value;
+                }
+
+                if (filter.id === 'favorite' && typeof filter.value === 'boolean') {
+                    requestQuery.favorite = filter.value ? 'true' : 'false';
+                }
+            }
+
+            router.get(mergeAcquisitionIndex().url, requestQuery, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: [
+                    'activeType',
+                    'opportunities',
+                    'tableState',
+                    'rowCount',
+                    'pageCount',
+                    'summary',
+                ],
+            });
+        },
+        [],
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -211,7 +458,7 @@ export default function MergeAcquisitionIndex({
                                     <Button asChild size="lg">
                                         <Link
                                             href={mergeAcquisitionIndex({
-                                                query: { type: mode.value },
+                                                query: { intent_type: mode.value },
                                             }).url}
                                         >
                                             {mode.ctaLabel}
@@ -224,41 +471,44 @@ export default function MergeAcquisitionIndex({
                     })}
                 </section>
 
-                <section className="rounded-[2rem] border border-dashed border-border/70 bg-card/70 p-6 shadow-sm">
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                        <div className="space-y-3">
-                            <Badge
-                                variant="outline"
-                                className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.16em] uppercase"
-                            >
-                                Prossimo step
-                            </Badge>
-                            <div className="space-y-2">
-                                <h2 className="text-2xl font-semibold tracking-tight">
-                                    Registro opportunita attive
-                                </h2>
-                                <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-                                    Nel prossimo step inseriamo la tabella con filtri,
-                                    dettaglio sensibile in modal e gestione preferiti.
-                                    La pagina e gia predisposta per un&apos;esperienza
-                                    ordinata, professionale e orientata alla selezione.
-                                </p>
+                <section className="space-y-5 rounded-[2rem] border border-border/70 bg-card/70 p-6 shadow-sm">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-3">
+                                <div className="flex size-11 items-center justify-center rounded-2xl border border-border/70 bg-background/80">
+                                    <LayoutList className="size-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-semibold tracking-tight">
+                                        Opportunità attive
+                                    </h2>
+                                    <p className="text-sm leading-6 text-muted-foreground">
+                                        Vista operativa con filtri server-side per trovare rapidamente i mandati rilevanti.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3">
-                            <Button variant="outline" disabled>
-                                <CirclePlus className="size-4" />
-                                Crea opportunita
-                            </Button>
-                            <Button variant="ghost" asChild>
-                                <Link href={mergeAcquisitionIndex().url}>
-                                    Vista completa
-                                    <ArrowRight className="size-4" />
-                                </Link>
-                            </Button>
+                        <div className="flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-4 py-2 text-sm text-muted-foreground">
+                            <Building2 className="size-4" />
+                            {rowCount} risultati
                         </div>
                     </div>
+
+                    <ServerDataTable
+                        columns={columns}
+                        data={opportunities}
+                        rowCount={rowCount}
+                        pageCount={pageCount}
+                        initialColumnFilters={tableState.columnFilters}
+                        initialSorting={tableState.sorting}
+                        initialPagination={tableState.pagination}
+                        onQueryChange={handleQueryChange}
+                        filters={filters}
+                        filtersLayout="stacked"
+                        debounceMs={250}
+                        enableSorting
+                    />
                 </section>
             </div>
         </AppLayout>
