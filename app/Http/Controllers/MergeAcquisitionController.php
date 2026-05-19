@@ -124,10 +124,14 @@ class MergeAcquisitionController extends Controller {
                     'operationType' => $mergeAcquisition->intent_type,
                     'activitySector' => $mergeAcquisition->economicActivity?->activity_name ?? 'N/D',
                     'legalEntity' => $mergeAcquisition->legal_entity ?? 'N/D',
-                    'activityDescription' => $mergeAcquisition->company_description ?? 'N/D',
+                    'activityDescription' => $mergeAcquisition->product
+                        ?? $mergeAcquisition->company_description
+                        ?? 'N/D',
                     'atecoCode' => $mergeAcquisition->ateco_code ?? 'N/D',
                     'headquarters' => $this->formatHeadquarters($mergeAcquisition),
                     'favorite' => $mergeAcquisition->favoritePeople->isNotEmpty(),
+                    'companyName' => $mergeAcquisition->company_name ?? 'N/D',
+                    'companyDescription' => $mergeAcquisition->company_description ?? 'N/D',
                 ],
             )->values(),
             'tableState' => [

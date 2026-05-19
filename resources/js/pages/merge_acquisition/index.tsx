@@ -1,6 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
+    Eye,
+    Heart,
     BriefcaseBusiness,
     Building2,
     ChevronRight,
@@ -10,13 +12,34 @@ import {
     ScanSearch,
 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
+import {
+    destroy as destroyFavorite,
+    store as storeFavorite,
+} from '@/actions/App/Http/Controllers/MergeAcquisitionFavoriteController';
 import AppLayout from '@/layouts/app-layout';
+import ConfirmActionDialog from '@/components/confirm-action-dialog';
 import type { DataTableFilterDef } from '@/components/data-table-filters';
 import { ServerDataTable } from '@/components/server-data-table';
 import type { ServerTableQuery } from '@/components/server-data-table';
 import { dashboard } from '@/routes';
 import { index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
 import type { BreadcrumbItem } from '@/types';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import {
     AppCard,
     AppCardContent,
@@ -26,8 +49,6 @@ import {
     AppCardIcon,
     AppCardTitle,
 } from '@/components/ui/app-card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     PageHero,
     PageHeroActions,
@@ -78,6 +99,8 @@ type OpportunityRow = {
     atecoCode: string;
     headquarters: string;
     favorite: boolean;
+    companyName: string;
+    companyDescription: string;
 };
 
 type TableState = {
@@ -111,6 +134,60 @@ const modeCardTones = {
     BUY_SIDE: 'primary',
     SELL_SIDE: 'support',
 } as const;
+
+function SensitiveDetailsDialog({ opportunity }: { opportunity: OpportunityRow }) {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                    <Eye className="size-4" />
+                    Dettaglio
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Dettaglio riservato</DialogTitle>
+                    <DialogDescription>
+                        I dati sensibili restano nascosti fino all&apos;apertura delle sezioni dedicate.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                            <p className="text-sm font-semibold">{opportunity.opportunityCode}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {opportunity.operationType === 'BUY_SIDE' ? 'Buy-side' : 'Sell-side'} • {opportunity.activitySector}
+                            </p>
+                        </div>
+                        <Badge variant="outline" className="rounded-full px-3 py-1">
+                            Sensibile
+                        </Badge>
+                    </div>
+
+                    <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="company-name">
+                            <AccordionTrigger>Nome azienda</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="rounded-xl border border-border/70 bg-background px-4 py-3">
+                                    {opportunity.companyName}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="company-description">
+                            <AccordionTrigger>Descrizione azienda</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="rounded-xl border border-border/70 bg-background px-4 py-3 text-sm leading-6 text-muted-foreground">
+                                    {opportunity.companyDescription}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function MergeAcquisitionIndex({
     activeType,
@@ -188,8 +265,56 @@ export default function MergeAcquisitionIndex({
         },
     ];
 
+    const toggleFavorite = useCallback((opportunityId: number, isFavorite: boolean) => {
+        const action = isFavorite
+            ? destroyFavorite(opportunityId)
+            : storeFavorite(opportunityId);
+
+        router.visit(action, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }, []);
+
     const columns = useMemo<ColumnDef<OpportunityRow>[]>(
         () => [
+            {
+                id: 'actions',
+                header: 'Azioni',
+                enableSorting: false,
+                cell: ({ row }) => (
+                    <div className="flex flex-wrap items-center gap-2">
+                        <SensitiveDetailsDialog opportunity={row.original} />
+                        <ConfirmActionDialog
+                            triggerLabel={row.original.favorite ? 'Preferito' : 'Preferisci'}
+                            title={
+                                row.original.favorite
+                                    ? 'Rimuovere dai preferiti?'
+                                    : 'Aggiungere ai preferiti?'
+                            }
+                            description={
+                                row.original.favorite
+                                    ? `Vuoi rimuovere l'opportunità ${row.original.opportunityCode} dai tuoi preferiti?`
+                                    : `Vuoi aggiungere l'opportunità ${row.original.opportunityCode} ai tuoi preferiti?`
+                            }
+                            confirmLabel={
+                                row.original.favorite
+                                    ? 'Rimuovi dai preferiti'
+                                    : 'Aggiungi ai preferiti'
+                            }
+                            onConfirm={() => toggleFavorite(row.original.id, row.original.favorite)}
+                            variant={row.original.favorite ? 'secondary' : 'default'}
+                            confirmVariant={row.original.favorite ? 'destructive' : 'default'}
+                            triggerIcon={<Heart className="size-4" />}
+                            ariaLabel={
+                                row.original.favorite
+                                    ? `Rimuovi ${row.original.opportunityCode} dai preferiti`
+                                    : `Aggiungi ${row.original.opportunityCode} ai preferiti`
+                            }
+                        />
+                    </div>
+                ),
+            },
             {
                 accessorKey: 'opportunityCode',
                 header: 'Codice',
@@ -263,7 +388,7 @@ export default function MergeAcquisitionIndex({
                 ),
             },
         ],
-        [],
+        [toggleFavorite],
     );
 
     const handleQueryChange = useCallback(

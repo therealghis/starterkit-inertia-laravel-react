@@ -19,6 +19,7 @@ type ConfirmActionDialogProps = {
     onConfirm: () => void;
     disabled?: boolean;
     variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+    confirmVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
     size?: 'default' | 'sm' | 'lg' | 'icon';
     triggerIcon?: ReactNode;
     ariaLabel?: string;
@@ -32,6 +33,7 @@ export default function ConfirmActionDialog({
     onConfirm,
     disabled = false,
     variant = 'destructive',
+    confirmVariant = 'destructive',
     size = 'sm',
     triggerIcon,
     ariaLabel,
@@ -62,7 +64,7 @@ export default function ConfirmActionDialog({
                     </Button>
                     <Button
                         type="button"
-                        variant="destructive"
+                        variant={confirmVariant}
                         onClick={() => {
                             setIsOpen(false);
                             onConfirm();

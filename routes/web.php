@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\MergeAcquisitionController;
+use App\Http\Controllers\MergeAcquisitionFavoriteController;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,14 @@ Route::put('/locale/{locale}', function (Request $request, string $locale): Redi
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::post(
+        'merge_acquisition/{mergeAcquisition}/favorite',
+        [MergeAcquisitionFavoriteController::class, 'store'],
+    )->name('merge_acquisition.favorite.store');
+    Route::delete(
+        'merge_acquisition/{mergeAcquisition}/favorite',
+        [MergeAcquisitionFavoriteController::class, 'destroy'],
+    )->name('merge_acquisition.favorite.destroy');
     Route::resource('merge_acquisition', MergeAcquisitionController::class);
 });
 
