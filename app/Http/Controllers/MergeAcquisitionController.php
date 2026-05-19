@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\MergeAcquisition;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class MergeAcquisitionController extends Controller {
     /**
      * Display a listing of the resource.
      */
     public function index() {
-        //
+        return Inertia::render('merge_acquisition/index');
     }
 
     /**
