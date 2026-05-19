@@ -30,17 +30,27 @@ class MergeAcquisitionEconomicActivitySeeder extends Seeder {
             'Altre attività di servizi',
         ];
 
+        $timestamp = now();
+
         foreach ($economicActivities as $activityName) {
-            DB::table('merge_acquisition_economic_activity')->updateOrInsert(
-                ['activity_name' => $activityName],
-                [
+            $query = DB::table('merge_acquisition_economic_activity')
+                ->where('activity_name', $activityName);
+
+            if ($query->exists()) {
+                $query->update([
                     'active' => true,
-                    'date_updated' => null,
-                    'person_id_updated' => null,
-                    'date_created' => now(),
-                    'person_id_created' => null,
-                ],
-            );
+                    'updated_at' => $timestamp,
+                ]);
+
+                continue;
+            }
+
+            DB::table('merge_acquisition_economic_activity')->insert([
+                'activity_name' => $activityName,
+                'active' => true,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ]);
         }
     }
 }
