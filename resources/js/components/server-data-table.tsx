@@ -862,7 +862,7 @@ export function ServerDataTable<TData, TValue>({
             </div>
 
             <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-background shadow-sm">
-                <Table className="text-sm">
+                <Table className="w-full table-fixed text-sm">
                     <TableHeader className="bg-muted/50">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
@@ -870,7 +870,9 @@ export function ServerDataTable<TData, TValue>({
                                     <TableHead
                                         key={header.id}
                                         className={
-                                            header.column.id === 'select' ? 'w-10 px-2' : 'px-6'
+                                            header.column.id === 'select'
+                                                ? 'w-10 px-2 align-top'
+                                                : 'px-4 py-3 align-top whitespace-normal break-words'
                                         }
                                     >
                                         {header.isPlaceholder ? null : enableSorting &&
@@ -879,7 +881,7 @@ export function ServerDataTable<TData, TValue>({
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
-                                                className="-ml-1 h-8 px-2 text-left"
+                                                className="-ml-1 h-auto px-2 py-1 text-left whitespace-normal"
                                                 onClick={header.column.getToggleSortingHandler()}
                                             >
                                                 {flexRender(
@@ -915,7 +917,7 @@ export function ServerDataTable<TData, TValue>({
                                             className={
                                                 cell.column.id === 'select'
                                                     ? 'w-10 px-2 text-center'
-                                                    : 'px-6 py-4'
+                                                    : 'px-4 py-4 align-top whitespace-normal break-words'
                                             }
                                         >
                                             {flexRender(

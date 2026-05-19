@@ -235,7 +235,7 @@ export default function MergeAcquisitionIndex({
                 accessorKey: 'activityDescription',
                 header: 'Descrizione attività',
                 cell: ({ row }) => (
-                    <div className="max-w-[28rem] truncate text-sm text-muted-foreground">
+                    <div className="line-clamp-2 text-sm leading-6 text-muted-foreground">
                         {row.original.activityDescription}
                     </div>
                 ),
