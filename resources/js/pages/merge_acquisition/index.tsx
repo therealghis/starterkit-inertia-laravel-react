@@ -24,6 +24,7 @@ import type { ServerTableQuery } from '@/components/server-data-table';
 import { dashboard } from '@/routes';
 import {
     buy_side as mergeAcquisitionBuySide,
+    create as mergeAcquisitionCreate,
     index as mergeAcquisitionIndex,
     sell_side as mergeAcquisitionSellSide,
 } from '@/routes/merge_acquisition';
@@ -589,9 +590,11 @@ export default function MergeAcquisitionIndex({
                             </PageHeroStats>
 
                             <PageHeroActions>
-                                <Button disabled size="lg" aria-label="Creazione opportunita disponibile nel prossimo step">
-                                    <CirclePlus className="size-4" />
-                                    Nuova opportunita
+                                <Button asChild size="lg">
+                                    <Link href={mergeAcquisitionCreate()}>
+                                        <CirclePlus className="size-4" />
+                                        Nuova opportunita
+                                    </Link>
                                 </Button>
                             </PageHeroActions>
                         </PageHeroAside>
