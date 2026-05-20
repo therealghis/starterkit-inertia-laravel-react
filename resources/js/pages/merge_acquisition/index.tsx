@@ -2,14 +2,15 @@ import { Head, Link, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
     Eye,
-    Heart,
     BriefcaseBusiness,
     Building2,
     ChevronRight,
     CirclePlus,
     Landmark,
     LayoutList,
+    Pencil,
     ScanSearch,
+    Star,
 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import {
@@ -190,9 +191,9 @@ function SensitiveDetailsDialog({ opportunity }: { opportunity: OpportunityRow }
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="icon" aria-label={`Dettaglio ${opportunity.opportunityCode}`}>
                     <Eye className="size-4" />
-                    Dettaglio
+                    <span className="sr-only">Dettaglio</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
@@ -353,15 +354,15 @@ export default function MergeAcquisitionIndex({
                     <div className="flex flex-wrap items-center gap-2">
                         <SensitiveDetailsDialog opportunity={row.original} />
                         {isMineListing ? (
-                            <Button asChild variant="outline" size="sm">
+                            <Button asChild variant="outline" size="icon">
                                 <Link href={mergeAcquisitionEdit(row.original.id)}>
-                                    <Eye className="size-4" />
-                                    Modifica
+                                    <Pencil className="size-4" />
+                                    <span className="sr-only">Modifica</span>
                                 </Link>
                             </Button>
                         ) : null}
                         <ConfirmActionDialog
-                            triggerLabel={row.original.favorite ? 'Preferito' : 'Preferisci'}
+                            triggerLabel=""
                             title={
                                 row.original.favorite
                                     ? 'Rimuovere dai preferiti?'
@@ -380,7 +381,8 @@ export default function MergeAcquisitionIndex({
                             onConfirm={() => toggleFavorite(row.original.id, row.original.favorite)}
                             variant={row.original.favorite ? 'secondary' : 'default'}
                             confirmVariant={row.original.favorite ? 'destructive' : 'default'}
-                            triggerIcon={<Heart className="size-4" />}
+                            size="icon"
+                            triggerIcon={<Star className="size-4" />}
                             ariaLabel={
                                 row.original.favorite
                                     ? `Rimuovi ${row.original.opportunityCode} dai preferiti`
