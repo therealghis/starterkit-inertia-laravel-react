@@ -23,8 +23,9 @@ import { ServerDataTable } from '@/components/server-data-table';
 import type { ServerTableQuery } from '@/components/server-data-table';
 import { dashboard } from '@/routes';
 import {
-    active_type as mergeAcquisitionActiveType,
+    buy_side as mergeAcquisitionBuySide,
     index as mergeAcquisitionIndex,
+    sell_side as mergeAcquisitionSellSide,
 } from '@/routes/merge_acquisition';
 import type { BreadcrumbItem } from '@/types';
 import {
@@ -261,11 +262,11 @@ export default function MergeAcquisitionIndex({
 
     const currentListingRoute = useMemo(() => {
         if (activeType === 'BUY_SIDE') {
-            return mergeAcquisitionActiveType('buy_side');
+            return mergeAcquisitionBuySide();
         }
 
         if (activeType === 'SELL_SIDE') {
-            return mergeAcquisitionActiveType('sell_side');
+            return mergeAcquisitionSellSide();
         }
 
         return mergeAcquisitionIndex();
@@ -586,8 +587,8 @@ export default function MergeAcquisitionIndex({
                                         <Link
                                             href={
                                                 mode.value === 'BUY_SIDE'
-                                                    ? mergeAcquisitionActiveType('buy_side')
-                                                    : mergeAcquisitionActiveType('sell_side')
+                                                    ? mergeAcquisitionBuySide()
+                                                    : mergeAcquisitionSellSide()
                                             }
                                         >
                                             {mode.ctaLabel}

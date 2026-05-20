@@ -15,8 +15,9 @@ import {
 import { useTranslations } from '@/hooks/use-translations';
 import { dashboard } from '@/routes';
 import {
-    active_type as mergeAcquisitionActiveType,
+    buy_side as mergeAcquisitionBuySide,
     index as mergeAcquisitionIndex,
+    sell_side as mergeAcquisitionSellSide,
 } from '@/routes/merge_acquisition';
 
 export function AppSidebar() {
@@ -38,11 +39,11 @@ export function AppSidebar() {
                 },
                 {
                     title: 'Buy-side',
-                    href: mergeAcquisitionActiveType('buy_side'),
+                    href: mergeAcquisitionBuySide(),
                 },
                 {
                     title: 'Sell-side',
-                    href: mergeAcquisitionActiveType('sell_side'),
+                    href: mergeAcquisitionSellSide(),
                 },
             ],
         },

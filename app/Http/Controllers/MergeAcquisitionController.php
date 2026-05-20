@@ -10,11 +10,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 class MergeAcquisitionController extends Controller {
-    private const array ACTIVE_TYPE_SLUGS = [
-        'buy_side' => MergeAcquisitionType::BUY_SIDE,
-        'sell_side' => MergeAcquisitionType::SELL_SIDE,
-    ];
-
     /**
      * Display a listing of the resource.
      */
@@ -22,10 +17,17 @@ class MergeAcquisitionController extends Controller {
         return $this->renderListing($request, null);
     }
 
-    public function activeType(Request $request, string $activeType): Response {
+    public function buySide(Request $request): Response {
         return $this->renderListing(
             $request,
-            self::ACTIVE_TYPE_SLUGS[$activeType] ?? null,
+            MergeAcquisitionType::BUY_SIDE,
+        );
+    }
+
+    public function sellSide(Request $request): Response {
+        return $this->renderListing(
+            $request,
+            MergeAcquisitionType::SELL_SIDE,
         );
     }
 

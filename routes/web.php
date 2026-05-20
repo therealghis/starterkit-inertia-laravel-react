@@ -20,11 +20,15 @@ Route::put('/locale/{locale}', function (Request $request, string $locale): Redi
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
-    Route::resource('merge_acquisition', MergeAcquisitionController::class);
     Route::get(
-        'merge_acquisition/{active_type}',
-        [MergeAcquisitionController::class, 'activeType'],
-    )->whereIn('active_type', ['buy_side', 'sell_side'])->name('merge_acquisition.active_type');
+        'merge_acquisition/buy_side',
+        [MergeAcquisitionController::class, 'buySide'],
+    )->name('merge_acquisition.buy_side');
+    Route::get(
+        'merge_acquisition/sell_side',
+        [MergeAcquisitionController::class, 'sellSide'],
+    )->name('merge_acquisition.sell_side');
+    Route::resource('merge_acquisition', MergeAcquisitionController::class);
     Route::post(
         'merge_acquisition/{mergeAcquisition}/favorite',
         [MergeAcquisitionFavoriteController::class, 'store'],
