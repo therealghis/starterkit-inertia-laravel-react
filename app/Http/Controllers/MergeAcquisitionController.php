@@ -10,21 +10,26 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 class MergeAcquisitionController extends Controller {
+    private const array ACTIVE_TYPE_SLUGS = [
+        'buy_side' => MergeAcquisitionType::BUY_SIDE,
+        'sell_side' => MergeAcquisitionType::SELL_SIDE,
+    ];
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request): Response {
-        $allowedTypes = [
-            MergeAcquisitionType::BUY_SIDE,
-            MergeAcquisitionType::SELL_SIDE,
-        ];
+        return $this->renderListing($request, null);
+    }
 
-        $activeType = $request->string('intent_type')->toString();
+    public function activeType(Request $request, string $activeType): Response {
+        return $this->renderListing(
+            $request,
+            self::ACTIVE_TYPE_SLUGS[$activeType] ?? null,
+        );
+    }
 
-        if (! in_array($activeType, $allowedTypes, true)) {
-            $activeType = null;
-        }
-
+    private function renderListing(Request $request, ?string $activeType): Response {
         $user = $request->user();
         $page = max($request->integer('page', 1), 1);
         $pageSize = $this->resolvePageSize($request->integer('page_size', 10));
@@ -139,9 +144,6 @@ class MergeAcquisitionController extends Controller {
                     $identificationCode !== ''
                         ? ['id' => 'opportunityCode', 'value' => $identificationCode]
                         : null,
-                    $activeType !== null
-                        ? ['id' => 'operationType', 'value' => $activeType]
-                        : null,
                     $economicActivityId > 0
                         ? ['id' => 'activitySector', 'value' => (string) $economicActivityId]
                         : null,
@@ -254,7 +256,6 @@ class MergeAcquisitionController extends Controller {
     private function resolveSortColumn(string $sortColumn): string {
         $allowedSortColumns = [
             'opportunityCode' => 'identification_code',
-            'operationType' => 'intent_type',
             'legalEntity' => 'legal_entity',
             'activityDescription' => 'company_description',
             'atecoCode' => 'ateco_code',
@@ -266,7 +267,6 @@ class MergeAcquisitionController extends Controller {
     private function resolveSortId(string $sortColumn): string {
         $sortIds = [
             'identification_code' => 'opportunityCode',
-            'intent_type' => 'operationType',
             'legal_entity' => 'legalEntity',
             'company_description' => 'activityDescription',
             'ateco_code' => 'atecoCode',

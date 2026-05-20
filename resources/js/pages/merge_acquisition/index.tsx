@@ -22,7 +22,10 @@ import type { DataTableFilterDef } from '@/components/data-table-filters';
 import { ServerDataTable } from '@/components/server-data-table';
 import type { ServerTableQuery } from '@/components/server-data-table';
 import { dashboard } from '@/routes';
-import { index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
+import {
+    active_type as mergeAcquisitionActiveType,
+    index as mergeAcquisitionIndex,
+} from '@/routes/merge_acquisition';
 import type { BreadcrumbItem } from '@/types';
 import {
     Accordion,
@@ -219,15 +222,6 @@ export default function MergeAcquisitionIndex({
         },
         {
             kind: 'select',
-            columnId: 'operationType',
-            label: 'Tipo operazione',
-            options: [
-                { label: 'Buy-side', value: 'BUY_SIDE' },
-                { label: 'Sell-side', value: 'SELL_SIDE' },
-            ],
-        },
-        {
-            kind: 'select',
             columnId: 'activitySector',
             label: 'Settore attività',
             options: filterOptions.economicActivities,
@@ -264,6 +258,18 @@ export default function MergeAcquisitionIndex({
             falseLabel: 'No',
         },
     ];
+
+    const currentListingRoute = useMemo(() => {
+        if (activeType === 'BUY_SIDE') {
+            return mergeAcquisitionActiveType('buy_side');
+        }
+
+        if (activeType === 'SELL_SIDE') {
+            return mergeAcquisitionActiveType('sell_side');
+        }
+
+        return mergeAcquisitionIndex();
+    }, [activeType]);
 
     const toggleFavorite = useCallback((opportunityId: number, isFavorite: boolean) => {
         const action = isFavorite
@@ -410,10 +416,6 @@ export default function MergeAcquisitionIndex({
                     requestQuery.identification_code = filter.value;
                 }
 
-                if (filter.id === 'operationType' && typeof filter.value === 'string' && filter.value !== '') {
-                    requestQuery.intent_type = filter.value;
-                }
-
                 if (filter.id === 'activitySector' && typeof filter.value === 'string' && filter.value !== '') {
                     requestQuery.economic_activity_id = filter.value;
                 }
@@ -439,7 +441,7 @@ export default function MergeAcquisitionIndex({
                 }
             }
 
-            router.get(mergeAcquisitionIndex().url, requestQuery, {
+            router.get(currentListingRoute.url, requestQuery, {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
@@ -453,7 +455,7 @@ export default function MergeAcquisitionIndex({
                 ],
             });
         },
-        [],
+        [currentListingRoute],
     );
 
     return (
@@ -473,7 +475,7 @@ export default function MergeAcquisitionIndex({
                                 </Badge>
                                 {activeType ? (
                                     <Badge className="rounded-full px-3 py-1">
-                                        Filtro attivo: {activeType === 'BUY_SIDE' ? 'Buy-side' : 'Sell-side'}
+                                        Vista attiva: {activeType === 'BUY_SIDE' ? 'Buy-side' : 'Sell-side'}
                                     </Badge>
                                 ) : null}
                             </PageHeroEyebrow>
@@ -582,9 +584,11 @@ export default function MergeAcquisitionIndex({
 
                                     <Button asChild size="lg">
                                         <Link
-                                            href={mergeAcquisitionIndex({
-                                                query: { intent_type: mode.value },
-                                            }).url}
+                                            href={
+                                                mode.value === 'BUY_SIDE'
+                                                    ? mergeAcquisitionActiveType('buy_side')
+                                                    : mergeAcquisitionActiveType('sell_side')
+                                            }
                                         >
                                             {mode.ctaLabel}
                                             <ChevronRight className="size-4" />

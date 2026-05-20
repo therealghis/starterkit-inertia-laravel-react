@@ -14,7 +14,10 @@ import {
 } from '@/components/ui/sidebar';
 import { useTranslations } from '@/hooks/use-translations';
 import { dashboard } from '@/routes';
-import { index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
+import {
+    active_type as mergeAcquisitionActiveType,
+    index as mergeAcquisitionIndex,
+} from '@/routes/merge_acquisition';
 
 export function AppSidebar() {
     const { t } = useTranslations();
@@ -35,15 +38,11 @@ export function AppSidebar() {
                 },
                 {
                     title: 'Buy-side',
-                    href: mergeAcquisitionIndex({
-                        query: { intent_type: 'BUY_SIDE' },
-                    }),
+                    href: mergeAcquisitionActiveType('buy_side'),
                 },
                 {
                     title: 'Sell-side',
-                    href: mergeAcquisitionIndex({
-                        query: { intent_type: 'SELL_SIDE' },
-                    }),
+                    href: mergeAcquisitionActiveType('sell_side'),
                 },
             ],
         },

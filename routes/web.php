@@ -20,6 +20,11 @@ Route::put('/locale/{locale}', function (Request $request, string $locale): Redi
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::resource('merge_acquisition', MergeAcquisitionController::class);
+    Route::get(
+        'merge_acquisition/{active_type}',
+        [MergeAcquisitionController::class, 'activeType'],
+    )->whereIn('active_type', ['buy_side', 'sell_side'])->name('merge_acquisition.active_type');
     Route::post(
         'merge_acquisition/{mergeAcquisition}/favorite',
         [MergeAcquisitionFavoriteController::class, 'store'],
@@ -28,7 +33,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'merge_acquisition/{mergeAcquisition}/favorite',
         [MergeAcquisitionFavoriteController::class, 'destroy'],
     )->name('merge_acquisition.favorite.destroy');
-    Route::resource('merge_acquisition', MergeAcquisitionController::class);
 });
 
 require __DIR__.'/settings.php';
