@@ -25,6 +25,7 @@ import { dashboard } from '@/routes';
 import {
     create as mergeAcquisitionCreate,
     buy_side as mergeAcquisitionBuySide,
+    edit as mergeAcquisitionEdit,
     index as mergeAcquisitionIndex,
     sell_side as mergeAcquisitionSellSide,
 } from '@/routes/merge_acquisition';
@@ -351,6 +352,14 @@ export default function MergeAcquisitionIndex({
                 cell: ({ row }) => (
                     <div className="flex flex-wrap items-center gap-2">
                         <SensitiveDetailsDialog opportunity={row.original} />
+                        {isMineListing ? (
+                            <Button asChild variant="outline" size="sm">
+                                <Link href={mergeAcquisitionEdit(row.original.id)}>
+                                    <Eye className="size-4" />
+                                    Modifica
+                                </Link>
+                            </Button>
+                        ) : null}
                         <ConfirmActionDialog
                             triggerLabel={row.original.favorite ? 'Preferito' : 'Preferisci'}
                             title={
@@ -450,7 +459,7 @@ export default function MergeAcquisitionIndex({
                 ),
             },
         ],
-        [toggleFavorite],
+        [isMineListing, toggleFavorite],
     );
 
     const handleQueryChange = useCallback(

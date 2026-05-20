@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Enums\MergeAcquisitionType;
 use App\Http\Requests\MergeAcquisitionRequest;
 use App\Models\MergeAcquisition;
+use App\Models\MergeAcquisitionAttachment;
 use App\Models\MergeAcquisitionEconomicActivity;
+use App\Models\MergeAcquisitionFinancial;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -209,15 +211,7 @@ class MergeAcquisitionController extends Controller {
      */
     public function create(): Response {
         return Inertia::render('merge_acquisition/create', [
-            'economicActivities' => MergeAcquisitionEconomicActivity::query()
-                ->where('active', true)
-                ->orderBy('activity_name')
-                ->get()
-                ->map(fn (MergeAcquisitionEconomicActivity $activity): array => [
-                    'label' => $activity->activity_name,
-                    'value' => (string) $activity->id,
-                ])
-                ->values(),
+            'economicActivities' => $this->economicActivityOptions(),
         ]);
     }
 
@@ -234,7 +228,7 @@ class MergeAcquisitionController extends Controller {
             'active' => true,
         ]);
 
-        return to_route('merge_acquisition.index');
+        return $this->limitToAuthenticatedUser() ? to_route('merge_acquisition_mine.index') : to_route('merge_acquisition.index');
     }
 
     /**
@@ -247,22 +241,83 @@ class MergeAcquisitionController extends Controller {
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(MergeAcquisition $mergeAcquisition): void {
-        //
+    public function edit(MergeAcquisition $mergeAcquisition): Response {
+        $this->ensureOwnership($mergeAcquisition);
+
+        $mergeAcquisition->load([
+            'attachments' => fn ($builder) => $builder
+                ->where('active', true)
+                ->orderByDesc('created_at'),
+            'financials' => fn ($builder) => $builder
+                ->where('active', true)
+                ->orderByDesc('year')
+                ->orderByDesc('created_at'),
+        ]);
+
+        return Inertia::render('merge_acquisition/edit', [
+            'economicActivities' => $this->economicActivityOptions(),
+            'mergeAcquisition' => [
+                'id' => $mergeAcquisition->id,
+                'merge_acquisition_economic_activity_id' => $mergeAcquisition->merge_acquisition_economic_activity_id === null
+                    ? ''
+                    : (string) $mergeAcquisition->merge_acquisition_economic_activity_id,
+                'identification_code' => $mergeAcquisition->identification_code,
+                'intent_type' => $mergeAcquisition->intent_type,
+                'company_name' => $mergeAcquisition->company_name ?? '',
+                'company_description' => $mergeAcquisition->company_description ?? '',
+                'product' => $mergeAcquisition->product ?? '',
+                'legal_entity' => $mergeAcquisition->legal_entity ?? '',
+                'establishment_date' => $mergeAcquisition->establishment_date ?? '',
+                'ateco_code' => $mergeAcquisition->ateco_code ?? '',
+                'nominal_capital' => $mergeAcquisition->nominal_capital ?? '',
+                'headquarters_legal_province' => $mergeAcquisition->headquarters_legal_province ?? '',
+                'headquarters_legal_country' => $mergeAcquisition->headquarters_legal_country ?? '',
+                'headquarters_operative_province' => $mergeAcquisition->headquarters_operative_province ?? '',
+                'headquarters_operative_country' => $mergeAcquisition->headquarters_operative_country ?? '',
+                'total_employees' => $mergeAcquisition->total_employees === null
+                    ? ''
+                    : (string) $mergeAcquisition->total_employees,
+                'selling_type' => $mergeAcquisition->selling_type ?? '',
+                'selling_reason' => $mergeAcquisition->selling_reason ?? '',
+                'real_estate' => $mergeAcquisition->real_estate ?? false,
+            ],
+            'attachments' => $mergeAcquisition->attachments
+                ->map(fn (MergeAcquisitionAttachment $attachment): array => [
+                    'id' => $attachment->id,
+                    'filename' => $attachment->filename,
+                    'mimetype' => $attachment->mimetype,
+                    'file_path' => $attachment->file_path,
+                    'created_at' => $attachment->created_at?->format('Y-m-d H:i:s'),
+                ])
+                ->values(),
+            'financials' => $mergeAcquisition->financials
+                ->map(fn (MergeAcquisitionFinancial $financial): array => [
+                    'id' => $financial->id,
+                    'year' => $financial->year,
+                    'sales' => $financial->sales,
+                    'income' => $financial->income,
+                    'pfn' => $financial->pfn,
+                    'ebitda' => $financial->ebitda,
+                    'debt' => $financial->debt,
+                    'created_at' => $financial->created_at?->format('Y-m-d H:i:s'),
+                ])
+                ->values(),
+            'pageUrl' => route('merge_acquisition.edit', $mergeAcquisition),
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, MergeAcquisition $mergeAcquisition): void {
-        //
+        $this->ensureOwnership($mergeAcquisition);
     }
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(MergeAcquisition $mergeAcquisition): void {
-        //
+        $this->ensureOwnership($mergeAcquisition);
     }
 
     protected function baseListingQuery(Request $request): Builder {
@@ -285,6 +340,21 @@ class MergeAcquisitionController extends Controller {
 
     protected function limitToAuthenticatedUser(): bool {
         return false;
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, array{label: string, value: string}>
+     */
+    private function economicActivityOptions(): \Illuminate\Support\Collection {
+        return MergeAcquisitionEconomicActivity::query()
+            ->where('active', true)
+            ->orderBy('activity_name')
+            ->get()
+            ->map(fn (MergeAcquisitionEconomicActivity $activity): array => [
+                'label' => $activity->activity_name,
+                'value' => (string) $activity->id,
+            ])
+            ->values();
     }
 
     private function resolvePageSize(int $pageSize): int {
@@ -329,6 +399,13 @@ class MergeAcquisitionController extends Controller {
         }
 
         return null;
+    }
+
+    private function ensureOwnership(MergeAcquisition $mergeAcquisition): void {
+        abort_unless(
+            request()->user()?->id === $mergeAcquisition->user_id,
+            403,
+        );
     }
 
     private function formatHeadquarters(MergeAcquisition $mergeAcquisition): string {
