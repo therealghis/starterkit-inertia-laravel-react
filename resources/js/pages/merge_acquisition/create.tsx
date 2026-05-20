@@ -1,8 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { store as mergeAcquisitionStore } from '@/actions/App/Http/Controllers/MergeAcquisitionController';
-import { create as mergeAcquisitionCreate, index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,10 +12,12 @@ import {
     PageHeroEyebrow,
     PageHeroTitle,
 } from '@/components/ui/page-hero';
-import MergeAcquisitionFormFields, {
-    type EconomicActivityOption,
-    type MergeAcquisitionFormData,
-} from '@/pages/merge_acquisition/merge-acquisition-form-fields';
+import { useFormToast } from '@/hooks/use-form-toast';
+import AppLayout from '@/layouts/app-layout';
+import MergeAcquisitionFormFields from '@/pages/merge_acquisition/merge-acquisition-form-fields';
+import type { EconomicActivityOption, MergeAcquisitionFormData } from '@/pages/merge_acquisition/merge-acquisition-form-fields';
+import { create as mergeAcquisitionCreate, index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
+import type { BreadcrumbItem } from '@/types';
 
 type MergeAcquisitionCreateProps = {
     economicActivities: EconomicActivityOption[];
@@ -27,6 +26,12 @@ type MergeAcquisitionCreateProps = {
 export default function MergeAcquisitionCreate({
     economicActivities,
 }: MergeAcquisitionCreateProps) {
+    const createToast = useFormToast({
+        successMessage: 'Opportunità salvata',
+        successDescription: 'La nuova scheda M&A è stata registrata correttamente.',
+        errorMessage: 'Salvataggio non riuscito',
+        errorDescription: 'Controlla i campi evidenziati e riprova.',
+    });
     const form = useForm<MergeAcquisitionFormData>({
         merge_acquisition_economic_activity_id: '',
         identification_code: '',
@@ -62,7 +67,10 @@ export default function MergeAcquisitionCreate({
     const submit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        form.submit(mergeAcquisitionStore());
+        form.submit(mergeAcquisitionStore(), {
+            onSuccess: createToast.notifySuccess,
+            onError: createToast.notifyError,
+        });
     };
 
     return (

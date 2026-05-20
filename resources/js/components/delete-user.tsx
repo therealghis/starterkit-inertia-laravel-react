@@ -15,9 +15,16 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useFormToast } from '@/hooks/use-form-toast';
 
 export default function DeleteUser() {
     const passwordInput = useRef<HTMLInputElement>(null);
+    const deleteUserToast = useFormToast({
+        successMessage: 'Account deleted',
+        successDescription: 'Your account has been deleted successfully.',
+        errorMessage: 'Unable to delete account',
+        errorDescription: 'Enter your current password and try again.',
+    });
 
     return (
         <div className="space-y-6">
@@ -59,7 +66,11 @@ export default function DeleteUser() {
                             options={{
                                 preserveScroll: true,
                             }}
-                            onError={() => passwordInput.current?.focus()}
+                            onError={(errors) => {
+                                passwordInput.current?.focus();
+                                deleteUserToast.notifyError(errors);
+                            }}
+                            onSuccess={deleteUserToast.notifySuccess}
                             resetOnSuccess
                             className="space-y-6"
                         >

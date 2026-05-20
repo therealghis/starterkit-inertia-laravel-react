@@ -6,6 +6,7 @@ import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
 import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useFormToast } from '@/hooks/use-form-toast';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -39,6 +40,18 @@ export default function TwoFactor({
         errors,
     } = useTwoFactorAuth();
     const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
+    const enableTwoFactorToast = useFormToast({
+        successMessage: 'Two-factor authentication started',
+        successDescription: 'Complete the setup to secure your account.',
+        errorMessage: 'Unable to enable two-factor authentication',
+        errorDescription: 'Try again in a moment.',
+    });
+    const disableTwoFactorToast = useFormToast({
+        successMessage: 'Two-factor authentication disabled',
+        successDescription: 'Your account no longer requires a verification code.',
+        errorMessage: 'Unable to disable two-factor authentication',
+        errorDescription: 'Try again in a moment.',
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -70,7 +83,11 @@ export default function TwoFactor({
                             />
 
                             <div className="relative inline">
-                                <Form {...disable.form()}>
+                                <Form
+                                    {...disable.form()}
+                                    onSuccess={disableTwoFactorToast.notifySuccess}
+                                    onError={disableTwoFactorToast.notifyError}
+                                >
                                     {({ processing }) => (
                                         <Button
                                             variant="destructive"
@@ -104,9 +121,11 @@ export default function TwoFactor({
                                 ) : (
                                     <Form
                                         {...enable.form()}
-                                        onSuccess={() =>
-                                            setShowSetupModal(true)
-                                        }
+                                        onSuccess={() => {
+                                            enableTwoFactorToast.notifySuccess();
+                                            setShowSetupModal(true);
+                                        }}
+                                        onError={enableTwoFactorToast.notifyError}
                                     >
                                         {({ processing }) => (
                                             <Button

@@ -1,4 +1,3 @@
-import { Transition } from '@headlessui/react';
 import { Form, Head } from '@inertiajs/react';
 import { useRef } from 'react';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
@@ -7,6 +6,7 @@ import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { useFormToast } from '@/hooks/use-form-toast';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { edit } from '@/routes/user-password';
@@ -22,6 +22,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Password() {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
+    const passwordFormToast = useFormToast({
+        successMessage: 'Password updated',
+        successDescription: 'Your password has been saved.',
+        errorMessage: 'Unable to update password',
+        errorDescription: 'Check the form fields and try again.',
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -56,10 +62,13 @@ export default function Password() {
                             if (errors.current_password) {
                                 currentPasswordInput.current?.focus();
                             }
+
+                            passwordFormToast.notifyError(errors);
                         }}
+                        onSuccess={passwordFormToast.notifySuccess}
                         className="space-y-6"
                     >
-                        {({ errors, processing, recentlySuccessful }) => (
+                        {({ errors, processing }) => (
                             <>
                                 <div className="grid gap-2">
                                     <Label htmlFor="current_password">
@@ -122,18 +131,6 @@ export default function Password() {
                                     >
                                         Save password
                                     </Button>
-
-                                    <Transition
-                                        show={recentlySuccessful}
-                                        enter="transition ease-in-out"
-                                        enterFrom="opacity-0"
-                                        leave="transition ease-in-out"
-                                        leaveTo="opacity-0"
-                                    >
-                                        <p className="text-sm text-neutral-600">
-                                            Saved
-                                        </p>
-                                    </Transition>
                                 </div>
                             </>
                         )}

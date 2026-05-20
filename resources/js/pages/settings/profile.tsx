@@ -1,4 +1,3 @@
-import { Transition } from '@headlessui/react';
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
@@ -8,6 +7,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useFormToast } from '@/hooks/use-form-toast';
 import { useTranslations } from '@/hooks/use-translations';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -31,6 +31,12 @@ export default function Profile({
 }) {
     const { auth } = usePage().props;
     const { t } = useTranslations();
+    const profileFormToast = useFormToast({
+        successMessage: 'Profile updated',
+        successDescription: 'Your profile information has been saved.',
+        errorMessage: 'Unable to update profile',
+        errorDescription: 'Check the form fields and try again.',
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -51,9 +57,11 @@ export default function Profile({
                         options={{
                             preserveScroll: true,
                         }}
+                        onSuccess={profileFormToast.notifySuccess}
+                        onError={profileFormToast.notifyError}
                         className="space-y-6"
                     >
-                        {({ processing, recentlySuccessful, errors }) => (
+                        {({ processing, errors }) => (
                             <>
                                 <div className="grid gap-2">
                                     <Label htmlFor="name">Name</Label>
@@ -128,18 +136,6 @@ export default function Profile({
                                     >
                                         Save
                                     </Button>
-
-                                    <Transition
-                                        show={recentlySuccessful}
-                                        enter="transition ease-in-out"
-                                        enterFrom="opacity-0"
-                                        leave="transition ease-in-out"
-                                        leaveTo="opacity-0"
-                                    >
-                                        <p className="text-sm text-neutral-600">
-                                            Saved
-                                        </p>
-                                    </Transition>
                                 </div>
                             </>
                         )}

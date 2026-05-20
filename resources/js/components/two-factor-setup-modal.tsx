@@ -20,6 +20,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { useFormToast } from '@/hooks/use-form-toast';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import { confirm } from '@/routes/two-factor';
 
@@ -147,6 +148,12 @@ function TwoFactorVerificationStep({
 }) {
     const [code, setCode] = useState<string>('');
     const pinInputContainerRef = useRef<HTMLDivElement>(null);
+    const confirmTwoFactorToast = useFormToast({
+        successMessage: 'Two-factor authentication enabled',
+        successDescription: 'Your account is now protected with an authenticator app.',
+        errorMessage: 'Unable to confirm two-factor authentication',
+        errorDescription: 'Enter a valid verification code and try again.',
+    });
 
     useEffect(() => {
         setTimeout(() => {
@@ -157,7 +164,11 @@ function TwoFactorVerificationStep({
     return (
         <Form
             {...confirm.form()}
-            onSuccess={() => onClose()}
+            onSuccess={() => {
+                confirmTwoFactorToast.notifySuccess();
+                onClose();
+            }}
+            onError={confirmTwoFactorToast.notifyError}
             resetOnError
             resetOnSuccess
         >

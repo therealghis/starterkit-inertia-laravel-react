@@ -10,6 +10,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { useFormToast } from '@/hooks/use-form-toast';
 import { regenerateRecoveryCodes } from '@/routes/two-factor';
 
 type Props = {
@@ -26,6 +27,12 @@ export default function TwoFactorRecoveryCodes({
     const [codesAreVisible, setCodesAreVisible] = useState<boolean>(false);
     const codesSectionRef = useRef<HTMLDivElement | null>(null);
     const canRegenerateCodes = recoveryCodesList.length > 0 && codesAreVisible;
+    const regenerateCodesToast = useFormToast({
+        successMessage: 'Recovery codes regenerated',
+        successDescription: 'Store the new recovery codes in a safe place.',
+        errorMessage: 'Unable to regenerate recovery codes',
+        errorDescription: 'Try again in a moment.',
+    });
 
     const toggleCodesVisibility = useCallback(async () => {
         if (!codesAreVisible && !recoveryCodesList.length) {
@@ -83,7 +90,11 @@ export default function TwoFactorRecoveryCodes({
                         <Form
                             {...regenerateRecoveryCodes.form()}
                             options={{ preserveScroll: true }}
-                            onSuccess={fetchRecoveryCodes}
+                            onSuccess={() => {
+                                regenerateCodesToast.notifySuccess();
+                                void fetchRecoveryCodes();
+                            }}
+                            onError={regenerateCodesToast.notifyError}
                         >
                             {({ processing }) => (
                                 <Button

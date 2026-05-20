@@ -1,17 +1,10 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { CirclePlus, FileSpreadsheet, Paperclip, PencilLine } from 'lucide-react';
+import { CirclePlus, Download, FileSpreadsheet, Paperclip, PencilLine } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { update as mergeAcquisitionUpdate } from '@/actions/App/Http/Controllers/MergeAcquisitionController';
 import FileUpload from '@/components/file-upload';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import { update as mergeAcquisitionUpdate } from '@/actions/App/Http/Controllers/MergeAcquisitionController';
-import { index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
-import MergeAcquisitionFormFields, {
-    type EconomicActivityOption,
-    type MergeAcquisitionFormData,
-} from '@/pages/merge_acquisition/merge-acquisition-form-fields';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +31,12 @@ import {
 } from '@/components/ui/page-hero';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download } from 'lucide-react';
+import { useFormToast } from '@/hooks/use-form-toast';
+import AppLayout from '@/layouts/app-layout';
+import MergeAcquisitionFormFields from '@/pages/merge_acquisition/merge-acquisition-form-fields';
+import type { EconomicActivityOption, MergeAcquisitionFormData } from '@/pages/merge_acquisition/merge-acquisition-form-fields';
+import { index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
+import type { BreadcrumbItem } from '@/types';
 
 type AttachmentRecord = {
     id: number;
@@ -97,6 +95,26 @@ type FinancialDraftForm = {
     debt: string;
 };
 
+type PersistedAttachmentRow = {
+    key: string;
+    attachmentId: number;
+    filename: string;
+    mimetype: string;
+    source: string;
+    downloadUrl: string;
+    status: 'Salvato';
+};
+
+type DraftAttachmentRow = {
+    key: string;
+    filename: string;
+    mimetype: string;
+    source: string;
+    status: 'Da salvare';
+};
+
+type AttachmentRow = PersistedAttachmentRow | DraftAttachmentRow;
+
 type MergeAcquisitionEditProps = {
     economicActivities: EconomicActivityOption[];
     mergeAcquisition: MergeAcquisitionFormData & {
@@ -141,6 +159,12 @@ export default function MergeAcquisitionEdit({
     const [draftFinancials, setDraftFinancials] = useState<DraftFinancialRecord[]>([]);
     const [financialDraft, setFinancialDraft] = useState<FinancialDraftForm>(emptyFinancialDraft);
     const [financialDraftError, setFinancialDraftError] = useState<string | null>(null);
+    const updateToast = useFormToast({
+        successMessage: 'Opportunità aggiornata',
+        successDescription: 'Le modifiche alla scheda M&A sono state salvate.',
+        errorMessage: 'Aggiornamento non riuscito',
+        errorDescription: 'Controlla i campi evidenziati e riprova.',
+    });
 
     const form = useForm<MergeAcquisitionFormData>({
         merge_acquisition_economic_activity_id: mergeAcquisition.merge_acquisition_economic_activity_id,
@@ -200,15 +224,15 @@ export default function MergeAcquisitionEdit({
         return [...persistedRows, ...draftRows].sort((left, right) => right.year - left.year);
     }, [draftFinancials, financials]);
 
-    const combinedAttachmentRows = useMemo(() => {
+    const combinedAttachmentRows = useMemo<AttachmentRow[]>(() => {
         const persistedRows = attachments.map((attachment) => ({
             key: `persisted-${attachment.id}`,
             attachmentId: attachment.id,
             filename: attachment.filename,
             mimetype: attachment.mimetype,
             source: attachment.file_path,
-            download_url: attachment.download_url,
-            status: 'Salvato',
+            downloadUrl: attachment.download_url,
+            status: 'Salvato' as const,
         }));
 
         const draftRows = draftAttachments.map((attachment) => ({
@@ -216,7 +240,7 @@ export default function MergeAcquisitionEdit({
             filename: attachment.filename,
             mimetype: attachment.mimetype,
             source: attachment.sizeLabel,
-            status: 'Da salvare',
+            status: 'Da salvare' as const,
         }));
 
         return [...persistedRows, ...draftRows];
@@ -250,8 +274,9 @@ export default function MergeAcquisitionEdit({
         [draftAttachments],
     );
 
-    const attachmentError = form.errors.attachments ?? findFirstErrorByPrefix(form.errors, 'attachments.');
-    const financialError = form.errors.financials ?? findFirstErrorByPrefix(form.errors, 'financials.');
+    const formErrors = form.errors as Record<string, string | undefined>;
+    const attachmentError = formErrors.attachments ?? findFirstErrorByPrefix(formErrors, 'attachments.') ?? undefined;
+    const financialError = formErrors.financials ?? findFirstErrorByPrefix(formErrors, 'financials.') ?? undefined;
     const triggerAttachmentDownload = (url: string): void => {
         window.location.assign(url);
     };
@@ -349,6 +374,7 @@ export default function MergeAcquisitionEdit({
             preserveScroll: true,
             preserveState: false,
             onSuccess: () => {
+                updateToast.notifySuccess();
                 setDraftAttachments([]);
                 setDraftFinancials([]);
                 setPendingFiles([]);
@@ -357,6 +383,7 @@ export default function MergeAcquisitionEdit({
                 setIsAttachmentDialogOpen(false);
                 setIsFinancialDialogOpen(false);
             },
+            onError: updateToast.notifyError,
         });
     };
 
@@ -506,13 +533,13 @@ export default function MergeAcquisitionEdit({
                                                     <TableCell>{attachment.mimetype}</TableCell>
                                                     <TableCell className="max-w-[340px] truncate">{attachment.source}</TableCell>
                                                     <TableCell>
-                                                        {'attachmentId' in attachment ? (
+                                                        {'downloadUrl' in attachment ? (
                                                             <Button
                                                                 type="button"
                                                                 variant="outline"
                                                                 size="icon"
                                                                 aria-label={`Scarica ${attachment.filename}`}
-                                                                onClick={() => triggerAttachmentDownload(attachment.download_url)}
+                                                                onClick={() => triggerAttachmentDownload(attachment.downloadUrl)}
                                                             >
                                                                 <Download className="size-4" />
                                                                 <span className="sr-only">Scarica</span>
