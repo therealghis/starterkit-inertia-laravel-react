@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\MergeAcquisitionType;
+use App\Http\Requests\MergeAcquisitionRequest;
 use App\Models\MergeAcquisition;
 use App\Models\MergeAcquisitionEconomicActivity;
 use Illuminate\Http\Request;
@@ -131,9 +132,8 @@ class MergeAcquisitionController extends Controller {
                     'operationType' => $mergeAcquisition->intent_type,
                     'activitySector' => $mergeAcquisition->economicActivity?->activity_name ?? 'N/D',
                     'legalEntity' => $mergeAcquisition->legal_entity ?? 'N/D',
-                    'activityDescription' => $mergeAcquisition->product
-                        ?? $mergeAcquisition->company_description
-                        ?? 'N/D',
+                    'activityDescription' => $mergeAcquisition->company_description ?? 'N/D',
+                    'product' => $mergeAcquisition->product ?? 'N/D',
                     'atecoCode' => $mergeAcquisition->ateco_code ?? 'N/D',
                     'headquarters' => $this->formatHeadquarters($mergeAcquisition),
                     'favorite' => $mergeAcquisition->favoritePeople->isNotEmpty(),
@@ -206,14 +206,24 @@ class MergeAcquisitionController extends Controller {
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): void {
-        //
+    public function create(): Response {
+        return Inertia::render('merge_acquisition/create', [
+            'economicActivities' => MergeAcquisitionEconomicActivity::query()
+                ->where('active', true)
+                ->orderBy('activity_name')
+                ->get()
+                ->map(fn (MergeAcquisitionEconomicActivity $activity): array => [
+                    'label' => $activity->activity_name,
+                    'value' => (string) $activity->id,
+                ])
+                ->values(),
+        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): void {
+    public function store(MergeAcquisitionRequest $request): void {
         //
     }
 

@@ -100,6 +100,7 @@ type OpportunityRow = {
     activitySector: string;
     legalEntity: string;
     activityDescription: string;
+    product: string;
     atecoCode: string;
     headquarters: string;
     favorite: boolean;
@@ -138,6 +139,84 @@ const modeCardTones = {
     BUY_SIDE: 'primary',
     SELL_SIDE: 'support',
 } as const;
+
+function ActivityDescriptionDialog({ opportunity }: { opportunity: OpportunityRow }) {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <button
+                    type="button"
+                    className="line-clamp-2 cursor-pointer text-left text-sm leading-6 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    {opportunity.activityDescription}
+                </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Descrizione attività</DialogTitle>
+                    <DialogDescription>
+                        {opportunity.opportunityCode} • {opportunity.operationType === 'BUY_SIDE' ? 'Buy-side' : 'Sell-side'}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="rounded-2xl border border-border/70 bg-muted/20 p-5">
+                    <div className="mb-3 flex items-center gap-2">
+                        <Badge
+                            variant={opportunity.operationType === 'BUY_SIDE' ? 'default' : 'secondary'}
+                            className="rounded-full px-3 py-1"
+                        >
+                            {opportunity.operationType === 'BUY_SIDE' ? 'Buy-side' : 'Sell-side'}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">{opportunity.activitySector}</span>
+                    </div>
+
+                    <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm leading-7 text-foreground/90">
+                        {opportunity.activityDescription}
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function ProductDialog({ opportunity }: { opportunity: OpportunityRow }) {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <button
+                    type="button"
+                    className="line-clamp-2 cursor-pointer text-left text-sm leading-6 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    {opportunity.product}
+                </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Prodotto</DialogTitle>
+                    <DialogDescription>
+                        {opportunity.opportunityCode} • {opportunity.operationType === 'BUY_SIDE' ? 'Buy-side' : 'Sell-side'}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="rounded-2xl border border-border/70 bg-muted/20 p-5">
+                    <div className="mb-3 flex items-center gap-2">
+                        <Badge
+                            variant={opportunity.operationType === 'BUY_SIDE' ? 'default' : 'secondary'}
+                            className="rounded-full px-3 py-1"
+                        >
+                            {opportunity.operationType === 'BUY_SIDE' ? 'Buy-side' : 'Sell-side'}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">{opportunity.activitySector}</span>
+                    </div>
+
+                    <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm leading-7 text-foreground/90">
+                        {opportunity.product}
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 function SensitiveDetailsDialog({ opportunity }: { opportunity: OpportunityRow }) {
     return (
@@ -366,11 +445,12 @@ export default function MergeAcquisitionIndex({
             {
                 accessorKey: 'activityDescription',
                 header: 'Descrizione attività',
-                cell: ({ row }) => (
-                    <div className="line-clamp-2 text-sm leading-6 text-muted-foreground">
-                        {row.original.activityDescription}
-                    </div>
-                ),
+                cell: ({ row }) => <ActivityDescriptionDialog opportunity={row.original} />,
+            },
+            {
+                accessorKey: 'product',
+                header: 'Prodotto',
+                cell: ({ row }) => <ProductDialog opportunity={row.original} />,
             },
             {
                 accessorKey: 'atecoCode',
