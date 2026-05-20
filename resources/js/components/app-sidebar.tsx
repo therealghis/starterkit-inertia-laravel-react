@@ -23,6 +23,7 @@ import {
 import {
     index as mergeAcquisitionMineIndex,
     buy_side as mergeAcquisitionMineBuySide,
+    sell_side as mergeAcquisitionMineSellSide,
 } from '@/routes/merge_acquisition_mine';
 
 export function AppSidebar() {
@@ -61,6 +62,14 @@ export function AppSidebar() {
                         {
                             title: 'Dashboard',
                             href: mergeAcquisitionMineIndex(),
+                        },
+                        {
+                            title: 'Buy-side',
+                            href: mergeAcquisitionMineBuySide(),
+                        },
+                        {
+                            title: 'Sell-side',
+                            href: mergeAcquisitionMineSellSide(),
                         },
                     ],
                 },

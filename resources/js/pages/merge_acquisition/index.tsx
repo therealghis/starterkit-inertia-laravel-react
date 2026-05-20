@@ -23,11 +23,16 @@ import { ServerDataTable } from '@/components/server-data-table';
 import type { ServerTableQuery } from '@/components/server-data-table';
 import { dashboard } from '@/routes';
 import {
-    buy_side as mergeAcquisitionBuySide,
     create as mergeAcquisitionCreate,
+    buy_side as mergeAcquisitionBuySide,
     index as mergeAcquisitionIndex,
     sell_side as mergeAcquisitionSellSide,
 } from '@/routes/merge_acquisition';
+import {
+    buy_side as mergeAcquisitionMineBuySide,
+    index as mergeAcquisitionMineIndex,
+    sell_side as mergeAcquisitionMineSellSide,
+} from '@/routes/merge_acquisition_mine';
 import type { BreadcrumbItem } from '@/types';
 import {
     Accordion,
@@ -84,6 +89,7 @@ type Summary = {
 };
 
 type MergeAcquisitionIndexProps = {
+    listingScope: 'all' | 'mine';
     activeType: string | null;
     operationModes: OperationMode[];
     opportunities: OpportunityRow[];
@@ -234,6 +240,7 @@ function SensitiveDetailsDialog({ opportunity }: { opportunity: OpportunityRow }
 }
 
 export default function MergeAcquisitionIndex({
+    listingScope,
     activeType,
     operationModes,
     opportunities,
@@ -243,6 +250,11 @@ export default function MergeAcquisitionIndex({
     filterOptions,
     summary,
 }: MergeAcquisitionIndexProps) {
+    const isMineListing = listingScope === 'mine';
+    const listingIndexRoute = isMineListing ? mergeAcquisitionMineIndex() : mergeAcquisitionIndex();
+    const listingBuySideRoute = isMineListing ? mergeAcquisitionMineBuySide() : mergeAcquisitionBuySide();
+    const listingSellSideRoute = isMineListing ? mergeAcquisitionMineSellSide() : mergeAcquisitionSellSide();
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Dashboard',
@@ -253,6 +265,13 @@ export default function MergeAcquisitionIndex({
             href: mergeAcquisitionIndex(),
         },
     ];
+
+    if (isMineListing) {
+        breadcrumbs.push({
+            title: 'Le mie opportunità',
+            href: mergeAcquisitionMineIndex(),
+        });
+    }
 
     const filters: DataTableFilterDef[] = [
         {
@@ -302,15 +321,15 @@ export default function MergeAcquisitionIndex({
 
     const currentListingRoute = useMemo(() => {
         if (activeType === 'BUY_SIDE') {
-            return mergeAcquisitionBuySide();
+            return listingBuySideRoute;
         }
 
         if (activeType === 'SELL_SIDE') {
-            return mergeAcquisitionSellSide();
+            return listingSellSideRoute;
         }
 
-        return mergeAcquisitionIndex();
-    }, [activeType]);
+        return listingIndexRoute;
+    }, [activeType, listingBuySideRoute, listingIndexRoute, listingSellSideRoute]);
 
     const toggleFavorite = useCallback((opportunityId: number, isFavorite: boolean) => {
         const action = isFavorite
@@ -518,7 +537,9 @@ export default function MergeAcquisitionIndex({
                             </PageHeroEyebrow>
 
                             <div className="space-y-3">
-                                <PageHeroTitle>Opportunita M&amp;A</PageHeroTitle>
+                                <PageHeroTitle>
+                                    {isMineListing ? 'Le mie opportunità M&A' : 'Opportunita M&A'}
+                                </PageHeroTitle>
                             </div>
                         </PageHeroContent>
 
@@ -620,8 +641,8 @@ export default function MergeAcquisitionIndex({
                                         <Link
                                             href={
                                                 mode.value === 'BUY_SIDE'
-                                                    ? mergeAcquisitionBuySide()
-                                                    : mergeAcquisitionSellSide()
+                                                    ? listingBuySideRoute
+                                                    : listingSellSideRoute
                                             }
                                         >
                                             {mode.ctaLabel}
@@ -643,10 +664,12 @@ export default function MergeAcquisitionIndex({
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-semibold tracking-tight">
-                                        Opportunità attive
+                                        {isMineListing ? 'Le mie opportunità attive' : 'Opportunità attive'}
                                     </h2>
                                     <p className="text-sm leading-6 text-muted-foreground">
-                                        Vista operativa con filtri server-side per trovare rapidamente i mandati rilevanti.
+                                        {isMineListing
+                                            ? 'Vista operativa delle opportunità create dal tuo utente, con filtri server-side.'
+                                            : 'Vista operativa con filtri server-side per trovare rapidamente i mandati rilevanti.'}
                                     </p>
                                 </div>
                             </div>

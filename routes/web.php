@@ -31,15 +31,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )->name('merge_acquisition.sell_side');
     Route::resource('merge_acquisition', MergeAcquisitionController::class);
 
-    Route::get(
-        'merge_acquisition_mine/buy_side',
-        [MyOppurtunitiesController::class, 'buySide'],
-    )->name('merge_acquisition_mine.buy_side');
-    Route::get(
-        'merge_acquisition_mine/sell_side',
-        [MyOppurtunitiesController::class, 'sellSide'],
-    )->name('merge_acquisition_mine.sell_side');
-    Route::resource('merge_acquisition_mine', MyOppurtunitiesController::class);
+    Route::controller(MyOppurtunitiesController::class)
+        ->prefix('merge_acquisition_mine')
+        ->name('merge_acquisition_mine.')
+        ->group(function (): void {
+            Route::get('/', 'index')->name('index');
+            Route::get('/buy_side', 'buySide')->name('buy_side');
+            Route::get('/sell_side', 'sellSide')->name('sell_side');
+        });
 
     Route::post(
         'merge_acquisition/{mergeAcquisition}/favorite',

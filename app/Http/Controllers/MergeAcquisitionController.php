@@ -6,6 +6,8 @@ use App\Enums\MergeAcquisitionType;
 use App\Http\Requests\MergeAcquisitionRequest;
 use App\Models\MergeAcquisition;
 use App\Models\MergeAcquisitionEconomicActivity;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,7 +34,7 @@ class MergeAcquisitionController extends Controller {
         );
     }
 
-    private function renderListing(Request $request, ?string $activeType): Response {
+    protected function renderListing(Request $request, ?string $activeType): Response {
         $user = $request->user();
         $page = max($request->integer('page', 1), 1);
         $pageSize = $this->resolvePageSize($request->integer('page_size', 10));
@@ -47,8 +49,7 @@ class MergeAcquisitionController extends Controller {
         $headquarters = trim($request->string('headquarters')->toString());
         $favorite = $this->resolveFavoriteFilter($request->string('favorite')->toString());
 
-        $query = MergeAcquisition::query()
-            ->where('active', true)
+        $query = $this->baseListingQuery($request)
             ->with([
                 'economicActivity:id,activity_name',
                 'favoritePeople' => fn ($builder) => $builder
@@ -107,7 +108,10 @@ class MergeAcquisitionController extends Controller {
             ->paginate($pageSize, ['*'], 'page', $page)
             ->withQueryString();
 
-        return Inertia::render('merge_acquisition/index', [
+        $summaryQuery = $this->baseListingQuery($request);
+
+        return Inertia::render($this->listingComponent(), [
+            'listingScope' => $this->listingScope(),
             'activeType' => $activeType,
             'operationModes' => [
                 [
@@ -189,13 +193,11 @@ class MergeAcquisitionController extends Controller {
                     ->values(),
             ],
             'summary' => [
-                'activeOpportunities' => MergeAcquisition::query()->where('active', true)->count(),
-                'buySideOpportunities' => MergeAcquisition::query()
-                    ->where('active', true)
+                'activeOpportunities' => (clone $summaryQuery)->count(),
+                'buySideOpportunities' => (clone $summaryQuery)
                     ->where('intent_type', MergeAcquisitionType::BUY_SIDE)
                     ->count(),
-                'sellSideOpportunities' => MergeAcquisition::query()
-                    ->where('active', true)
+                'sellSideOpportunities' => (clone $summaryQuery)
                     ->where('intent_type', MergeAcquisitionType::SELL_SIDE)
                     ->count(),
             ],
@@ -222,25 +224,17 @@ class MergeAcquisitionController extends Controller {
     /**
      * Store a newly created resource in storage.
      */
-    public function store(MergeAcquisitionRequest $request): void {
-        $user = $request->user();
-        $request->validated();
+    public function store(MergeAcquisitionRequest $request): RedirectResponse {
+        $validated = $request->validated();
 
-        $mergeAcquisition = MergeAcquisition::create([
-            'user_id' => $user?->id,
-            'identification_code' => $request->identification_code,
-            'intent_type' => $request->intent_type,
-            'merge_acquisition_economic_activity_id' => $request->economic_activity_id,
-            'legal_entity' => $request->legal_entity,
-            'product' => $request->product,
-            'ateco_code' => $request->ateco_code,
-            'headquarters_legal_province' => $request->headquarters_legal_province,
-            'headquarters_legal_country' => $request->headquarters_legal_country,
-            'headquarters_operative_province' => $request->headquarters_operative_province,
-            'headquarters_operative_country' => $request->headquarters_operative_country,
-            'company_name' => $request->company_name,
-            'company_description' => $request->company_description,
+        MergeAcquisition::query()->create([
+            ...$validated,
+            'user_id' => $request->user()->id,
+            'real_estate' => (bool) ($validated['real_estate'] ?? false),
+            'active' => true,
         ]);
+
+        return to_route('merge_acquisition.index');
     }
 
     /**
@@ -269,6 +263,28 @@ class MergeAcquisitionController extends Controller {
      */
     public function destroy(MergeAcquisition $mergeAcquisition): void {
         //
+    }
+
+    protected function baseListingQuery(Request $request): Builder {
+        $query = MergeAcquisition::query()->where('active', true);
+
+        if ($this->limitToAuthenticatedUser()) {
+            $query->where('user_id', $request->user()->id);
+        }
+
+        return $query;
+    }
+
+    protected function listingComponent(): string {
+        return 'merge_acquisition/index';
+    }
+
+    protected function listingScope(): string {
+        return 'all';
+    }
+
+    protected function limitToAuthenticatedUser(): bool {
+        return false;
     }
 
     private function resolvePageSize(int $pageSize): int {
