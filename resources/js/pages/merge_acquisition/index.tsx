@@ -483,11 +483,6 @@ export default function MergeAcquisitionIndex({
 
                             <div className="space-y-3">
                                 <PageHeroTitle>Opportunita M&amp;A</PageHeroTitle>
-                                <PageHeroDescription>
-                                    Un punto di ingresso chiaro per gestire opportunita
-                                    buy-side e sell-side con un&apos;interfaccia sobria,
-                                    credibile e pronta a crescere con il flusso operativo.
-                                </PageHeroDescription>
                             </div>
                         </PageHeroContent>
 
