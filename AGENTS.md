@@ -1,3 +1,102 @@
+
+## Engineering Philosophy
+
+Write pragmatic, production-ready software.
+
+Priorities:
+
+1. readability
+2. maintainability
+3. simplicity
+4. correctness
+5. developer ergonomics
+6. scalability when justified
+7. performance when relevant
+
+Code must be understandable by junior developers.
+
+Favor explicitness over cleverness.
+
+Avoid "smart" code that increases cognitive load.
+
+---
+
+## Architectural Principles
+
+Preferred:
+
+- pragmatic clean architecture
+- service layer for business logic
+- DTOs when clarity improves interfaces
+- action classes when complexity grows
+- feature-based organization
+- explicit dependency boundaries
+- Laravel conventions unless deviation improves clarity
+
+Avoid:
+
+- unnecessary abstraction
+- speculative architecture
+- repository layers over Eloquent unless clearly justified
+- excessive domain-driven design ceremony
+- overengineering
+- premature optimization
+- hidden magic behavior
+- giant god classes
+---
+
+## Debugging Mode
+
+Default mode:
+
+FIX + ROOT CAUSE ANALYSIS + PREVENTION
+
+When debugging:
+
+always provide:
+1. likely root cause
+2. exact issue
+3. concrete fix
+4. why it happened
+5. prevention strategy
+
+Never provide superficial patch-only fixes unless explicitly requested.
+---
+
+## Refactoring Mode
+
+When reviewing/refactoring code:
+
+analyze for:
+- readability
+- maintainability
+- duplication
+- coupling
+- anti-patterns
+- hidden complexity
+- scaling risks
+- testability
+
+Preserve business behavior unless explicitly changing requirements.
+
+Refactor pragmatically.
+
+---
+
+## Code Generation Rules
+
+Generated code must:
+
+- be production-grade
+- include edge case awareness
+- be complete unless partial explicitly requested
+- include file placement guidance
+- follow existing project conventions if known
+- prioritize clarity over novelty
+
+If assumptions are made:
+state them explicitly.
+---
 <laravel-boost-guidelines>
 === foundation rules ===
 
