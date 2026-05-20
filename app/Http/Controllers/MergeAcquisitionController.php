@@ -42,7 +42,7 @@ class MergeAcquisitionController extends Controller {
         $identificationCode = trim($request->string('identification_code')->toString());
         $economicActivityId = $request->integer('economic_activity_id');
         $legalEntity = trim($request->string('legal_entity')->toString());
-        $activityDescription = trim($request->string('activity_description')->toString());
+        $product = trim($request->string('product')->toString());
         $atecoCode = trim($request->string('ateco_code')->toString());
         $headquarters = trim($request->string('headquarters')->toString());
         $favorite = $this->resolveFavoriteFilter($request->string('favorite')->toString());
@@ -72,8 +72,8 @@ class MergeAcquisitionController extends Controller {
             $query->where('legal_entity', 'like', "%{$legalEntity}%");
         }
 
-        if ($activityDescription !== '') {
-            $query->where('company_description', 'like', "%{$activityDescription}%");
+        if ($product !== '') {
+            $query->where('product', 'like', "%{$product}%");
         }
 
         if ($atecoCode !== '') {
@@ -132,7 +132,6 @@ class MergeAcquisitionController extends Controller {
                     'operationType' => $mergeAcquisition->intent_type,
                     'activitySector' => $mergeAcquisition->economicActivity?->activity_name ?? 'N/D',
                     'legalEntity' => $mergeAcquisition->legal_entity ?? 'N/D',
-                    'activityDescription' => $mergeAcquisition->company_description ?? 'N/D',
                     'product' => $mergeAcquisition->product ?? 'N/D',
                     'atecoCode' => $mergeAcquisition->ateco_code ?? 'N/D',
                     'headquarters' => $this->formatHeadquarters($mergeAcquisition),
@@ -152,8 +151,8 @@ class MergeAcquisitionController extends Controller {
                     $legalEntity !== ''
                         ? ['id' => 'legalEntity', 'value' => $legalEntity]
                         : null,
-                    $activityDescription !== ''
-                        ? ['id' => 'activityDescription', 'value' => $activityDescription]
+                    $product !== ''
+                        ? ['id' => 'product', 'value' => $product]
                         : null,
                     $atecoCode !== ''
                         ? ['id' => 'atecoCode', 'value' => $atecoCode]
@@ -269,7 +268,7 @@ class MergeAcquisitionController extends Controller {
         $allowedSortColumns = [
             'opportunityCode' => 'identification_code',
             'legalEntity' => 'legal_entity',
-            'activityDescription' => 'company_description',
+            'product' => 'product',
             'atecoCode' => 'ateco_code',
         ];
 
@@ -280,7 +279,7 @@ class MergeAcquisitionController extends Controller {
         $sortIds = [
             'identification_code' => 'opportunityCode',
             'legal_entity' => 'legalEntity',
-            'company_description' => 'activityDescription',
+            'product' => 'product',
             'ateco_code' => 'atecoCode',
         ];
 
