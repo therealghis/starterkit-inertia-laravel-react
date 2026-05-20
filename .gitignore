@@ -31,3 +31,4 @@ yarn-error.log
 !/.vscode/mcp.json
 /.zed
 /import/
+cghooks.lock

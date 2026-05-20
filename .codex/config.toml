@@ -1,7 +1,7 @@
 [mcp_servers.laravel-boost]
 command = "./vendor/bin/sail"
 args = ["artisan", "boost:mcp"]
-cwd = "/home/devel/laravel-inertia-react"
+cwd = "/home/devel/projects/shellrent-library/starterkit-inertia-laravel-react"
 
 [mcp_servers.laravel-boost.tools.search-docs]
 approval_mode = "approve"
