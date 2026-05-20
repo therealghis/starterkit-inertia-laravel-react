@@ -10,15 +10,14 @@ use Illuminate\Validation\Rule;
 
 class MergeAcquisitionEditRequest extends FormRequest {
     public function authorize(): bool {
-        return $this->user()?->id === $this->mergeAcquisition?->user_id;
+        return $this->user()?->id === $this->mergeAcquisition()?->user_id;
     }
 
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array {
-        /** @var MergeAcquisition $mergeAcquisition */
-        $mergeAcquisition = $this->route('mergeAcquisition');
+        $mergeAcquisition = $this->mergeAcquisition();
 
         return [
             'merge_acquisition_economic_activity_id' => [
@@ -72,6 +71,22 @@ class MergeAcquisitionEditRequest extends FormRequest {
             'financials.*.ebitda' => ['required', 'string', 'max:255'],
             'financials.*.debt' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    private function mergeAcquisition(): ?MergeAcquisition {
+        $mergeAcquisition = $this->route('merge_acquisition');
+
+        if ($mergeAcquisition instanceof MergeAcquisition) {
+            return $mergeAcquisition;
+        }
+
+        $legacyMergeAcquisition = $this->route('mergeAcquisition');
+
+        if ($legacyMergeAcquisition instanceof MergeAcquisition) {
+            return $legacyMergeAcquisition;
+        }
+
+        return null;
     }
 
     /**

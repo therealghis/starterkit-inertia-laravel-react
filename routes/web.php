@@ -30,6 +30,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [MergeAcquisitionController::class, 'sellSide'],
     )->name('merge_acquisition.sell_side');
     Route::resource('merge_acquisition', MergeAcquisitionController::class);
+    Route::get(
+        'merge_acquisition/{mergeAcquisition}/attachments/{attachment}/download',
+        [MergeAcquisitionController::class, 'downloadAttachment'],
+    )->name('merge_acquisition.attachment.download');
 
     Route::controller(MyOppurtunitiesController::class)
         ->prefix('merge_acquisition_mine')

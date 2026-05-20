@@ -3,8 +3,10 @@ import { CirclePlus, FileSpreadsheet, Paperclip, PencilLine } from 'lucide-react
 import { useMemo, useState } from 'react';
 import FileUpload from '@/components/file-upload';
 import Heading from '@/components/heading';
+import InputError from '@/components/input-error';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
+import { update as mergeAcquisitionUpdate } from '@/actions/App/Http/Controllers/MergeAcquisitionController';
 import { index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
 import MergeAcquisitionFormFields, {
     type EconomicActivityOption,
@@ -36,12 +38,14 @@ import {
 } from '@/components/ui/page-hero';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Download } from 'lucide-react';
 
 type AttachmentRecord = {
     id: number;
     filename: string;
     mimetype: string;
     file_path: string;
+    download_url: string;
     created_at: string | null;
 };
 
@@ -61,6 +65,7 @@ type DraftAttachmentRecord = {
     filename: string;
     mimetype: string;
     sizeLabel: string;
+    file: File;
 };
 
 type DraftFinancialRecord = {
@@ -71,6 +76,16 @@ type DraftFinancialRecord = {
     pfn: string;
     ebitda: string;
     debt: string;
+};
+
+type FinancialPayload = {
+    id?: number;
+    year: number;
+    sales: string;
+    income: string;
+    pfn: string;
+    ebitda: string;
+    debt: string | null;
 };
 
 type FinancialDraftForm = {
@@ -102,6 +117,15 @@ const emptyFinancialDraft = (): FinancialDraftForm => ({
 });
 
 const formatFileSize = (file: File): string => `${(file.size / 1024).toFixed(1)} KB`;
+
+const findFirstErrorByPrefix = (
+    errors: Record<string, string | undefined>,
+    prefix: string,
+): string | null => {
+    const entry = Object.entries(errors).find(([key, value]) => key.startsWith(prefix) && value);
+
+    return entry?.[1] ?? null;
+};
 
 export default function MergeAcquisitionEdit({
     economicActivities,
@@ -179,9 +203,11 @@ export default function MergeAcquisitionEdit({
     const combinedAttachmentRows = useMemo(() => {
         const persistedRows = attachments.map((attachment) => ({
             key: `persisted-${attachment.id}`,
+            attachmentId: attachment.id,
             filename: attachment.filename,
             mimetype: attachment.mimetype,
             source: attachment.file_path,
+            download_url: attachment.download_url,
             status: 'Salvato',
         }));
 
@@ -195,6 +221,40 @@ export default function MergeAcquisitionEdit({
 
         return [...persistedRows, ...draftRows];
     }, [attachments, draftAttachments]);
+
+    const financialPayload = useMemo<FinancialPayload[]>(
+        () => [
+            ...financials.map((financial) => ({
+                id: financial.id,
+                year: financial.year,
+                sales: financial.sales,
+                income: financial.income,
+                pfn: financial.pfn,
+                ebitda: financial.ebitda,
+                debt: financial.debt,
+            })),
+            ...draftFinancials.map((financial) => ({
+                year: financial.year,
+                sales: financial.sales,
+                income: financial.income,
+                pfn: financial.pfn,
+                ebitda: financial.ebitda,
+                debt: financial.debt || null,
+            })),
+        ],
+        [draftFinancials, financials],
+    );
+
+    const attachmentFiles = useMemo(
+        () => draftAttachments.map((attachment) => attachment.file),
+        [draftAttachments],
+    );
+
+    const attachmentError = form.errors.attachments ?? findFirstErrorByPrefix(form.errors, 'attachments.');
+    const financialError = form.errors.financials ?? findFirstErrorByPrefix(form.errors, 'financials.');
+    const triggerAttachmentDownload = (url: string): void => {
+        window.location.assign(url);
+    };
 
     const resetAttachmentDialog = () => {
         setPendingFiles([]);
@@ -213,6 +273,7 @@ export default function MergeAcquisitionEdit({
                 filename: file.name,
                 mimetype: file.type || 'application/octet-stream',
                 sizeLabel: formatFileSize(file),
+                file,
             })),
         ]);
 
@@ -274,6 +335,31 @@ export default function MergeAcquisitionEdit({
         resetFinancialDialog();
     };
 
+    const submit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        form.transform((data) => ({
+            ...data,
+            _method: 'put',
+            attachments: attachmentFiles,
+            financials: financialPayload,
+        }));
+
+        form.post(mergeAcquisitionUpdate(mergeAcquisition.id).url, {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: () => {
+                setDraftAttachments([]);
+                setDraftFinancials([]);
+                setPendingFiles([]);
+                setFinancialDraft(emptyFinancialDraft());
+                setFinancialDraftError(null);
+                setIsAttachmentDialogOpen(false);
+                setIsFinancialDialogOpen(false);
+            },
+        });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Modifica ${mergeAcquisition.identification_code}`} />
@@ -297,7 +383,7 @@ export default function MergeAcquisitionEdit({
                             <div className="space-y-3">
                                 <PageHeroTitle>Modifica opportunità M&amp;A</PageHeroTitle>
                                 <PageHeroDescription>
-                                    Completa la scheda base e prepara allegati e serie finanziarie annuali. Il salvataggio dell&apos;edit verrà collegato nel passo successivo.
+                                    Aggiorna la scheda base, allega documenti riservati e completa la serie finanziaria annuale direttamente dalla pagina di edit.
                                 </PageHeroDescription>
                             </div>
                         </PageHeroContent>
@@ -314,7 +400,7 @@ export default function MergeAcquisitionEdit({
                     </PageHeroBody>
                 </PageHero>
 
-                <form className="space-y-8" onSubmit={(event) => event.preventDefault()}>
+                <form className="space-y-8" onSubmit={submit}>
                     <MergeAcquisitionFormFields
                         economicActivities={economicActivities}
                         form={form}
@@ -327,7 +413,7 @@ export default function MergeAcquisitionEdit({
                         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                             <Heading
                                 title="Allegati"
-                                description="La tabella mostra gli allegati esistenti e quelli aggiunti localmente in bozza prima del collegamento del salvataggio."
+                                description="La tabella mostra gli allegati già presenti e quelli appena aggiunti, che verranno salvati insieme alla modifica della scheda."
                             />
 
                             <Dialog
@@ -352,7 +438,7 @@ export default function MergeAcquisitionEdit({
                                     <DialogHeader>
                                         <DialogTitle>Carica allegati</DialogTitle>
                                         <DialogDescription>
-                                            Usa il componente di upload già condiviso nel progetto. I file aggiunti finiranno subito nella tabella come bozza locale.
+                                            Usa il componente di upload già condiviso nel progetto. I file aggiunti finiscono subito nella tabella e vengono caricati al submit.
                                         </DialogDescription>
                                     </DialogHeader>
 
@@ -379,6 +465,8 @@ export default function MergeAcquisitionEdit({
                             </Dialog>
                         </div>
 
+                        <InputError message={attachmentError} />
+
                         <Card className="shadow-sm">
                             <CardHeader>
                                 <div className="flex items-start gap-3">
@@ -388,7 +476,7 @@ export default function MergeAcquisitionEdit({
                                     <div className="space-y-1">
                                         <CardTitle>Documentazione allegata</CardTitle>
                                         <CardDescription>
-                                            In questa fase la pagina gestisce solo la preparazione della lista. La persistenza server-side verrà aggiunta dopo.
+                                            I documenti vengono salvati sullo storage privato dell&apos;applicazione e collegati a questa opportunità.
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -400,13 +488,14 @@ export default function MergeAcquisitionEdit({
                                             <TableHead>File</TableHead>
                                             <TableHead>Tipo</TableHead>
                                             <TableHead>Origine</TableHead>
+                                            <TableHead className="w-20">Download</TableHead>
                                             <TableHead className="w-32">Stato</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {combinedAttachmentRows.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                                                <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
                                                     Nessun allegato disponibile.
                                                 </TableCell>
                                             </TableRow>
@@ -416,6 +505,22 @@ export default function MergeAcquisitionEdit({
                                                     <TableCell className="font-medium">{attachment.filename}</TableCell>
                                                     <TableCell>{attachment.mimetype}</TableCell>
                                                     <TableCell className="max-w-[340px] truncate">{attachment.source}</TableCell>
+                                                    <TableCell>
+                                                        {'attachmentId' in attachment ? (
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="icon"
+                                                                aria-label={`Scarica ${attachment.filename}`}
+                                                                onClick={() => triggerAttachmentDownload(attachment.download_url)}
+                                                            >
+                                                                <Download className="size-4" />
+                                                                <span className="sr-only">Scarica</span>
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">Bozza</span>
+                                                        )}
+                                                    </TableCell>
                                                     <TableCell>
                                                         <Badge variant={attachment.status === 'Salvato' ? 'secondary' : 'outline'}>
                                                             {attachment.status}
@@ -436,7 +541,7 @@ export default function MergeAcquisitionEdit({
                         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                             <Heading
                                 title="Dati finanziari annuali"
-                                description="Ogni riga rappresenta un anno. La UI previene duplicati per anno già presenti o aggiunti in bozza."
+                                description="Ogni riga rappresenta un anno. La UI previene duplicati per anno già presenti o aggiunti in bozza e il submit li persiste nel database."
                             />
 
                             <Dialog
@@ -562,6 +667,8 @@ export default function MergeAcquisitionEdit({
                             </Dialog>
                         </div>
 
+                        <InputError message={financialError} />
+
                         <Card className="shadow-sm">
                             <CardHeader>
                                 <div className="flex items-start gap-3">
@@ -571,7 +678,7 @@ export default function MergeAcquisitionEdit({
                                     <div className="space-y-1">
                                         <CardTitle>Serie finanziaria</CardTitle>
                                         <CardDescription>
-                                            Le righe già salvate convivono con quelle in bozza per permetterti di disegnare il flusso completo prima dell&apos;implementazione della persistenza.
+                                            Le righe già salvate convivono con quelle in bozza, che verranno create al prossimo submit.
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -626,15 +733,20 @@ export default function MergeAcquisitionEdit({
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2 text-sm font-medium">
                                     <PencilLine className="size-4" />
-                                    Salvataggio edit non ancora collegato
+                                    Salvataggio modifica
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    La pagina è pronta con dati base, allegati e financial. Nel prossimo passaggio agganciamo `update` e la persistenza delle righe figlie.
+                                    Il submit aggiorna i dati base, salva gli allegati nuovi e persiste le righe finanziarie presenti nella tabella.
                                 </p>
+                                {form.progress ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        Upload in corso: {form.progress.percentage}%
+                                    </p>
+                                ) : null}
                             </div>
 
-                            <Button type="button" size="lg" disabled>
-                                Salvataggio in arrivo
+                            <Button type="submit" size="lg" disabled={form.processing}>
+                                {form.processing ? 'Salvataggio...' : 'Salva modifiche'}
                             </Button>
                         </CardContent>
                     </Card>

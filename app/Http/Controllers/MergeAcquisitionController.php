@@ -3,14 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Enums\MergeAcquisitionType;
+use App\Http\Requests\MergeAcquisitionEditRequest;
 use App\Http\Requests\MergeAcquisitionRequest;
 use App\Models\MergeAcquisition;
 use App\Models\MergeAcquisitionAttachment;
 use App\Models\MergeAcquisitionEconomicActivity;
 use App\Models\MergeAcquisitionFinancial;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -287,6 +292,10 @@ class MergeAcquisitionController extends Controller {
                     'filename' => $attachment->filename,
                     'mimetype' => $attachment->mimetype,
                     'file_path' => $attachment->file_path,
+                    'download_url' => route('merge_acquisition.attachment.download', [
+                        'mergeAcquisition' => $mergeAcquisition,
+                        'attachment' => $attachment,
+                    ]),
                     'created_at' => $attachment->created_at?->format('Y-m-d H:i:s'),
                 ])
                 ->values(),
@@ -306,11 +315,68 @@ class MergeAcquisitionController extends Controller {
         ]);
     }
 
+    public function downloadAttachment(MergeAcquisition $mergeAcquisition, MergeAcquisitionAttachment $attachment): StreamedResponse {
+        $this->ensureOwnership($mergeAcquisition);
+        abort_unless($attachment->merge_acquisition_id === $mergeAcquisition->id, 404);
+        abort_unless(Storage::disk('local')->exists($attachment->file_path), 404);
+
+        return Storage::disk('local')->download(
+            $attachment->file_path,
+            $attachment->filename,
+        );
+    }
+
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, MergeAcquisition $mergeAcquisition): void {
-        $this->ensureOwnership($mergeAcquisition);
+    public function update(
+        MergeAcquisitionEditRequest $request,
+        MergeAcquisition $mergeAcquisition,
+    ): RedirectResponse {
+        $validated = $request->validated();
+
+        DB::transaction(function () use (
+            $request,
+            $mergeAcquisition,
+            $validated,
+        ): void {
+            $mergeAcquisition->update([
+                ...Arr::except($validated, ['attachments', 'financials']),
+                'real_estate' => (bool) ($validated['real_estate'] ?? false),
+            ]);
+
+            foreach ($request->file('attachments', []) as $attachment) {
+                $mergeAcquisition->attachments()->create([
+                    'mimetype' => $attachment->getClientMimeType() ?? 'application/octet-stream',
+                    'file_path' => $attachment->store(
+                        "merge-acquisition/{$mergeAcquisition->id}/attachments",
+                        'local',
+                    ),
+                    'filename' => $attachment->getClientOriginalName(),
+                    'active' => true,
+                ]);
+            }
+
+            foreach ($validated['financials'] ?? [] as $financialData) {
+                $payload = [
+                    ...Arr::except($financialData, ['id']),
+                    'active' => true,
+                ];
+
+                if (isset($financialData['id'])) {
+                    $mergeAcquisition->financials()
+                        ->whereKey($financialData['id'])
+                        ->firstOrFail()
+                        ->update($payload);
+
+                    continue;
+                }
+
+                $mergeAcquisition->financials()->create($payload);
+            }
+        });
+
+        return to_route('merge_acquisition.edit', $mergeAcquisition);
     }
 
     /**
