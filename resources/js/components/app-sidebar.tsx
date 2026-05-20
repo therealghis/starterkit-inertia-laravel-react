@@ -20,6 +20,11 @@ import {
     sell_side as mergeAcquisitionSellSide,
 } from '@/routes/merge_acquisition';
 
+import {
+    index as mergeAcquisitionMineIndex,
+    buy_side as mergeAcquisitionMineBuySide,
+} from '@/routes/merge_acquisition_mine';
+
 export function AppSidebar() {
     const { t } = useTranslations();
 
@@ -55,15 +60,7 @@ export function AppSidebar() {
                     items: [
                         {
                             title: 'Dashboard',
-                            disabled: true,
-                        },
-                        {
-                            title: 'Buy-side',
-                            disabled: true,
-                        },
-                        {
-                            title: 'Sell-side',
-                            disabled: true,
+                            href: mergeAcquisitionMineIndex(),
                         },
                     ],
                 },

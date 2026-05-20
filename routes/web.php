@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MergeAcquisitionController;
 use App\Http\Controllers\MergeAcquisitionFavoriteController;
+use App\Http\Controllers\MyOppurtunitiesController;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [MergeAcquisitionController::class, 'sellSide'],
     )->name('merge_acquisition.sell_side');
     Route::resource('merge_acquisition', MergeAcquisitionController::class);
+
+    Route::get(
+        'merge_acquisition_mine/buy_side',
+        [MyOppurtunitiesController::class, 'buySide'],
+    )->name('merge_acquisition_mine.buy_side');
+    Route::get(
+        'merge_acquisition_mine/sell_side',
+        [MyOppurtunitiesController::class, 'sellSide'],
+    )->name('merge_acquisition_mine.sell_side');
+    Route::resource('merge_acquisition_mine', MyOppurtunitiesController::class);
+
     Route::post(
         'merge_acquisition/{mergeAcquisition}/favorite',
         [MergeAcquisitionFavoriteController::class, 'store'],

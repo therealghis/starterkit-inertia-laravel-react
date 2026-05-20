@@ -223,7 +223,24 @@ class MergeAcquisitionController extends Controller {
      * Store a newly created resource in storage.
      */
     public function store(MergeAcquisitionRequest $request): void {
-        //
+        $user = $request->user();
+        $request->validated();
+
+        $mergeAcquisition = MergeAcquisition::create([
+            'user_id' => $user?->id,
+            'identification_code' => $request->identification_code,
+            'intent_type' => $request->intent_type,
+            'merge_acquisition_economic_activity_id' => $request->economic_activity_id,
+            'legal_entity' => $request->legal_entity,
+            'product' => $request->product,
+            'ateco_code' => $request->ateco_code,
+            'headquarters_legal_province' => $request->headquarters_legal_province,
+            'headquarters_legal_country' => $request->headquarters_legal_country,
+            'headquarters_operative_province' => $request->headquarters_operative_province,
+            'headquarters_operative_country' => $request->headquarters_operative_country,
+            'company_name' => $request->company_name,
+            'company_description' => $request->company_description,
+        ]);
     }
 
     /**
