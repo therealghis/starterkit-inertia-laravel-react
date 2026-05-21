@@ -1,6 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
 import { Download, FileSpreadsheet, Paperclip, PencilLine, ShieldAlert } from 'lucide-react';
 import Heading from '@/components/heading';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -178,9 +184,20 @@ export default function MergeAcquisitionShow({
                                     </div>
                                 </div>
                             </CardHeader>
-                            <CardContent className="grid gap-4">
-                                <DetailItem label="Nome azienda" value={sensitiveDetails.company_name} />
-                                <DetailItem label="Descrizione azienda" value={sensitiveDetails.company_description} />
+                            <CardContent>
+                                <Accordion type="single" collapsible className="w-full">
+                                    <AccordionItem value="sensitive-details" className="border-b-0">
+                                        <AccordionTrigger className="py-0 hover:no-underline">
+                                            Mostra dati sensibili
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-5">
+                                            <div className="grid gap-4">
+                                                <DetailItem label="Nome azienda" value={sensitiveDetails.company_name} />
+                                                <DetailItem label="Descrizione azienda" value={sensitiveDetails.company_description} />
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
                             </CardContent>
                         </Card>
                     </section>

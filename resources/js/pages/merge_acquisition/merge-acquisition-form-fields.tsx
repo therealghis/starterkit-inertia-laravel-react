@@ -3,6 +3,12 @@ import { ShieldAlert } from 'lucide-react';
 import InputError from '@/components/input-error';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -72,31 +78,42 @@ export default function MergeAcquisitionFormFields({
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="grid gap-5 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="company_name">Nome azienda</Label>
-                            <Input
-                                id="company_name"
-                                name="company_name"
-                                value={form.data.company_name}
-                                onChange={(event) => form.setData('company_name', event.target.value)}
-                                placeholder="Es. NorthGrid Analytics"
-                            />
-                            <InputError message={form.errors.company_name} />
-                        </div>
+                    <CardContent>
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="sensitive-details" className="border-b-0">
+                                <AccordionTrigger className="py-0 hover:no-underline">
+                                    Mostra dati sensibili
+                                </AccordionTrigger>
+                                <AccordionContent className="pt-5">
+                                    <div className="grid gap-5 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="company_name">Nome azienda</Label>
+                                            <Input
+                                                id="company_name"
+                                                name="company_name"
+                                                value={form.data.company_name}
+                                                onChange={(event) => form.setData('company_name', event.target.value)}
+                                                placeholder="Es. NorthGrid Analytics"
+                                            />
+                                            <InputError message={form.errors.company_name} />
+                                        </div>
 
-                        <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="company_description">Descrizione azienda</Label>
-                            <Textarea
-                                id="company_description"
-                                name="company_description"
-                                value={form.data.company_description}
-                                onChange={(event) => form.setData('company_description', event.target.value)}
-                                placeholder="Descrizione riservata del profilo aziendale."
-                                className="min-h-32"
-                            />
-                            <InputError message={form.errors.company_description} />
-                        </div>
+                                        <div className="space-y-2 md:col-span-2">
+                                            <Label htmlFor="company_description">Descrizione azienda</Label>
+                                            <Textarea
+                                                id="company_description"
+                                                name="company_description"
+                                                value={form.data.company_description}
+                                                onChange={(event) => form.setData('company_description', event.target.value)}
+                                                placeholder="Descrizione riservata del profilo aziendale."
+                                                className="min-h-32"
+                                            />
+                                            <InputError message={form.errors.company_description} />
+                                        </div>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     </CardContent>
                 </Card>
             </section>
