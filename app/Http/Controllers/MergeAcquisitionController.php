@@ -232,8 +232,81 @@ class MergeAcquisitionController extends Controller {
     /**
      * Display the specified resource.
      */
-    public function show(MergeAcquisition $mergeAcquisition): void {
-        //
+    public function show(MergeAcquisition $mergeAcquisition): Response {
+        $canViewSensitiveDetails = $this->canViewSensitiveDetails($mergeAcquisition);
+
+        abort_unless($mergeAcquisition->active || $canViewSensitiveDetails, 404);
+
+        $mergeAcquisition->load([
+            'economicActivity:id,activity_name',
+            'attachments' => fn ($builder) => $builder
+                ->where('active', true)
+                ->orderByDesc('created_at'),
+            'financials' => fn ($builder) => $builder
+                ->where('active', true)
+                ->orderByDesc('year')
+                ->orderByDesc('created_at'),
+        ]);
+
+        return Inertia::render('merge_acquisition/show', [
+            'mergeAcquisition' => [
+                'id' => $mergeAcquisition->id,
+                'identification_code' => $mergeAcquisition->identification_code,
+                'intent_type' => $mergeAcquisition->intent_type,
+                'economic_activity' => $mergeAcquisition->economicActivity?->activity_name ?? 'N/D',
+                'product' => $mergeAcquisition->product ?? 'N/D',
+                'legal_entity' => $mergeAcquisition->legal_entity ?? 'N/D',
+                'establishment_date' => $mergeAcquisition->establishment_date ?? 'N/D',
+                'ateco_code' => $mergeAcquisition->ateco_code ?? 'N/D',
+                'nominal_capital' => $mergeAcquisition->nominal_capital ?? 'N/D',
+                'headquarters_legal_province' => $mergeAcquisition->headquarters_legal_province ?? 'N/D',
+                'headquarters_legal_country' => $mergeAcquisition->headquarters_legal_country ?? 'N/D',
+                'headquarters_operative_province' => $mergeAcquisition->headquarters_operative_province ?? 'N/D',
+                'headquarters_operative_country' => $mergeAcquisition->headquarters_operative_country ?? 'N/D',
+                'total_employees' => $mergeAcquisition->total_employees === null
+                    ? 'N/D'
+                    : (string) $mergeAcquisition->total_employees,
+                'selling_type' => $mergeAcquisition->selling_type ?? 'N/D',
+                'selling_reason' => $mergeAcquisition->selling_reason ?? 'N/D',
+                'real_estate' => $mergeAcquisition->real_estate,
+            ],
+            'sensitiveDetails' => $canViewSensitiveDetails
+                ? [
+                    'company_name' => $mergeAcquisition->company_name ?? 'N/D',
+                    'company_description' => $mergeAcquisition->company_description ?? 'N/D',
+                ]
+                : null,
+            'attachments' => $mergeAcquisition->attachments
+                ->map(fn (MergeAcquisitionAttachment $attachment): array => [
+                    'id' => $attachment->id,
+                    'filename' => $attachment->filename,
+                    'mimetype' => $attachment->mimetype,
+                    'file_path' => $attachment->file_path,
+                    'download_url' => route('merge_acquisition.attachment.download', [
+                        'mergeAcquisition' => $mergeAcquisition,
+                        'attachment' => $attachment,
+                    ]),
+                    'created_at' => $attachment->created_at?->format('Y-m-d H:i:s'),
+                ])
+                ->values(),
+            'financials' => $mergeAcquisition->financials
+                ->map(fn (MergeAcquisitionFinancial $financial): array => [
+                    'id' => $financial->id,
+                    'year' => $financial->year,
+                    'sales' => $financial->sales,
+                    'income' => $financial->income,
+                    'pfn' => $financial->pfn,
+                    'ebitda' => $financial->ebitda,
+                    'debt' => $financial->debt,
+                    'created_at' => $financial->created_at?->format('Y-m-d H:i:s'),
+                ])
+                ->values(),
+            'canViewSensitiveDetails' => $canViewSensitiveDetails,
+            'pageUrl' => route('merge_acquisition.show', $mergeAcquisition),
+            'editUrl' => $canViewSensitiveDetails
+                ? route('merge_acquisition.edit', $mergeAcquisition)
+                : null,
+        ]);
     }
 
     /**
@@ -309,7 +382,7 @@ class MergeAcquisitionController extends Controller {
     }
 
     public function downloadAttachment(MergeAcquisition $mergeAcquisition, MergeAcquisitionAttachment $attachment): StreamedResponse {
-        $this->ensureOwnership($mergeAcquisition);
+        abort_unless($mergeAcquisition->active || $this->canViewSensitiveDetails($mergeAcquisition), 404);
         abort_unless($attachment->merge_acquisition_id === $mergeAcquisition->id, 404);
         abort_unless(Storage::disk('local')->exists($attachment->file_path), 404);
 
@@ -484,7 +557,7 @@ class MergeAcquisitionController extends Controller {
      * }
      */
     private function mapOpportunityRow(MergeAcquisition $mergeAcquisition, ?int $authenticatedUserId): array {
-        $canViewSensitiveDetails = $mergeAcquisition->user_id == $authenticatedUserId;
+        $canViewSensitiveDetails = $this->canViewSensitiveDetails($mergeAcquisition);
 
         return [
             'id' => $mergeAcquisition->id,
@@ -515,6 +588,10 @@ class MergeAcquisitionController extends Controller {
             request()->user()?->id === $mergeAcquisition->user_id,
             403,
         );
+    }
+
+    private function canViewSensitiveDetails(MergeAcquisition $mergeAcquisition): bool {
+        return $mergeAcquisition->user_id === auth()->user()?->id;
     }
 
     private function formatHeadquarters(MergeAcquisition $mergeAcquisition): string {

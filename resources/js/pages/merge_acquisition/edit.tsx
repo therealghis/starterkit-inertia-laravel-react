@@ -9,6 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -755,7 +761,7 @@ export default function MergeAcquisitionEdit({
 
                     <Separator />
 
-                    <Card className="border-dashed shadow-none">
+                <Card className="border-dashed shadow-none">
                         <CardContent className="flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-2 text-sm font-medium">

@@ -34,6 +34,7 @@ import {
     edit as mergeAcquisitionEdit,
     index as mergeAcquisitionIndex,
     sell_side as mergeAcquisitionSellSide,
+        show as mergeAcquisitionShow,
 } from '@/routes/merge_acquisition';
 import {
     buy_side as mergeAcquisitionMineBuySide,
@@ -41,12 +42,6 @@ import {
     sell_side as mergeAcquisitionMineSellSide,
 } from '@/routes/merge_acquisition_mine';
 import type { BreadcrumbItem } from '@/types';
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -193,60 +188,6 @@ function ProductDialog({ opportunity }: { opportunity: OpportunityRow }) {
                     <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm leading-7 text-foreground/90">
                         {opportunity.product}
                     </div>
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-function SensitiveDetailsDialog({ opportunity }: { opportunity: OpportunityRow }) {
-    return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button variant="outline" size="icon" aria-label={`Dettaglio ${opportunity.opportunityCode}`}>
-                    <Eye className="size-4" />
-                    <span className="sr-only">Dettaglio</span>
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Dettaglio riservato</DialogTitle>
-                    <DialogDescription>
-                        I dati sensibili restano nascosti fino all&apos;apertura delle sezioni dedicate.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-semibold">{opportunity.opportunityCode}</p>
-                            <p className="text-sm text-muted-foreground">
-                                {opportunity.operationType === 'BUY_SIDE' ? 'Buy-side' : 'Sell-side'} • {opportunity.activitySector}
-                            </p>
-                        </div>
-                        <Badge variant="outline" className="rounded-full px-3 py-1">
-                            Sensibile
-                        </Badge>
-                    </div>
-
-                    <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="company-name">
-                            <AccordionTrigger>Nome azienda</AccordionTrigger>
-                            <AccordionContent>
-                                <div className="rounded-xl border border-border/70 bg-background px-4 py-3">
-                                    {opportunity.companyName}
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="company-description">
-                            <AccordionTrigger>Descrizione azienda</AccordionTrigger>
-                            <AccordionContent>
-                                <div className="rounded-xl border border-border/70 bg-background px-4 py-3 text-sm leading-6 text-muted-foreground">
-                                    {opportunity.companyDescription}
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
                 </div>
             </DialogContent>
         </Dialog>
@@ -538,9 +479,12 @@ export default function MergeAcquisitionIndex({
                 enableSorting: false,
                 cell: ({ row }) => (
                     <div className="flex flex-wrap items-center gap-2">
-                        {row.original.canViewSensitiveDetails ? (
-                            <SensitiveDetailsDialog opportunity={row.original} />
-                        ) : null}
+                        <Button asChild variant="outline" size="icon">
+                            <Link href={mergeAcquisitionShow(row.original.id)} aria-label={`Dettaglio ${row.original.opportunityCode}`}>
+                                <Eye className="size-4" />
+                                <span className="sr-only">Dettaglio</span>
+                            </Link>
+                        </Button>
                         {isMineListing ? (
                             <Button asChild variant="outline" size="icon">
                                 <Link href={mergeAcquisitionEdit(row.original.id)}>
