@@ -62,6 +62,8 @@ class MergeAcquisitionController extends Controller {
                 'favoritePeople' => fn ($builder) => $builder
                     ->where('user_id', $user?->id)
                     ->where('active', true),
+                'contactRequests' => fn ($builder) => $builder
+                    ->where('requester_email', $user?->email),
             ]);
 
         if ($identificationCode !== '') {
@@ -148,6 +150,8 @@ class MergeAcquisitionController extends Controller {
                     'headquarters' => $this->formatHeadquarters($mergeAcquisition),
                     'favorite' => $mergeAcquisition->favoritePeople->isNotEmpty(),
                     'canDelete' => $this->limitToAuthenticatedUser(),
+                    'canRequestContact' => $user !== null && $mergeAcquisition->user_id !== $user->id,
+                    'hasRequestedContact' => $mergeAcquisition->contactRequests->isNotEmpty(),
                     'companyName' => $mergeAcquisition->company_name ?? 'N/D',
                     'companyDescription' => $mergeAcquisition->company_description ?? 'N/D',
                 ],

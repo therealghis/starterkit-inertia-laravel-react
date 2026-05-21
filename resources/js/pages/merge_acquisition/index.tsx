@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
     Eye,
@@ -8,19 +8,22 @@ import {
     CirclePlus,
     Landmark,
     LayoutList,
+    MailPlus,
     Pencil,
     ScanSearch,
     Star,
     Trash2,
 } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { destroy as destroyMergeAcquisition } from '@/actions/App/Http/Controllers/MergeAcquisitionController';
+import { store as storeContactRequest } from '@/actions/App/Http/Controllers/MergeAcquisitionContactRequestController';
 import {
     destroy as destroyFavorite,
     store as storeFavorite,
 } from '@/actions/App/Http/Controllers/MergeAcquisitionFavoriteController';
 import AppLayout from '@/layouts/app-layout';
 import ConfirmActionDialog from '@/components/confirm-action-dialog';
+import InputError from '@/components/input-error';
 import type { DataTableFilterDef } from '@/components/data-table-filters';
 import { ServerDataTable } from '@/components/server-data-table';
 import type { ServerTableQuery } from '@/components/server-data-table';
@@ -54,6 +57,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     AppCard,
     AppCardContent,
@@ -77,6 +82,7 @@ import {
     PageHeroStatValue,
     PageHeroTitle,
 } from '@/components/ui/page-hero';
+import type { Auth } from '@/types/auth';
 
 type OperationMode = {
     value: string;
@@ -115,6 +121,8 @@ type OpportunityRow = {
     headquarters: string;
     favorite: boolean;
     canDelete: boolean;
+    canRequestContact: boolean;
+    hasRequestedContact: boolean;
     companyName: string;
     companyDescription: string;
 };
@@ -239,6 +247,158 @@ function SensitiveDetailsDialog({ opportunity }: { opportunity: OpportunityRow }
                         </AccordionItem>
                     </Accordion>
                 </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function splitUserName(fullName: string): { requesterName: string; requesterSurname: string } {
+    const normalizedName = fullName.trim();
+
+    if (normalizedName === '') {
+        return {
+            requesterName: '',
+            requesterSurname: '',
+        };
+    }
+
+    const [requesterName, ...surnameParts] = normalizedName.split(/\s+/);
+
+    return {
+        requesterName,
+        requesterSurname: surnameParts.join(' '),
+    };
+}
+
+function ContactRequestDialog({ opportunity }: { opportunity: OpportunityRow }) {
+    const { auth } = usePage<{ auth: Auth }>().props;
+    const [isOpen, setIsOpen] = useState(false);
+    const defaults = useMemo(
+        () => splitUserName(auth.user.name),
+        [auth.user.name],
+    );
+    const form = useForm({
+        requester_name: defaults.requesterName,
+        requester_surname: defaults.requesterSurname,
+        requester_phone: '',
+    });
+
+    return (
+        <Dialog
+            open={isOpen}
+            onOpenChange={(open) => {
+                setIsOpen(open);
+
+                if (open) {
+                    form.setData('requester_name', defaults.requesterName);
+                    form.setData('requester_surname', defaults.requesterSurname);
+                    form.setData('requester_phone', '');
+                    form.clearErrors();
+                }
+            }}
+        >
+            <DialogTrigger asChild>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={opportunity.hasRequestedContact}
+                    className={
+                        opportunity.hasRequestedContact
+                            ? undefined
+                            : 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800'
+                    }
+                    aria-label={
+                        opportunity.hasRequestedContact
+                            ? `Richiesta già inviata per ${opportunity.opportunityCode}`
+                            : `Richiedi contatto per ${opportunity.opportunityCode}`
+                    }
+                >
+                    <MailPlus className="size-4" />
+                    <span className="sr-only">
+                        {opportunity.hasRequestedContact
+                            ? 'Richiesta già inviata'
+                            : 'Richiedi contatto'}
+                    </span>
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Richiedi contatto</DialogTitle>
+                    <DialogDescription>
+                        Conferma i tuoi dati per inviare una richiesta di contatto per l&apos;opportunità {opportunity.opportunityCode}.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form
+                    className="space-y-4"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+
+                        form.submit(storeContactRequest(opportunity.id), {
+                            preserveScroll: true,
+                            preserveState: true,
+                            onSuccess: () => {
+                                setIsOpen(false);
+                                form.reset('requester_phone');
+                            },
+                        });
+                    }}
+                >
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor={`requester_name_${opportunity.id}`}>Nome</Label>
+                            <Input
+                                id={`requester_name_${opportunity.id}`}
+                                value={form.data.requester_name}
+                                onChange={(event) => form.setData('requester_name', event.target.value)}
+                                placeholder="Es. Mario"
+                                aria-invalid={form.errors.requester_name ? 'true' : 'false'}
+                            />
+                            <InputError message={form.errors.requester_name} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor={`requester_surname_${opportunity.id}`}>Cognome</Label>
+                            <Input
+                                id={`requester_surname_${opportunity.id}`}
+                                value={form.data.requester_surname}
+                                onChange={(event) => form.setData('requester_surname', event.target.value)}
+                                placeholder="Es. Rossi"
+                                aria-invalid={form.errors.requester_surname ? 'true' : 'false'}
+                            />
+                            <InputError message={form.errors.requester_surname} />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor={`requester_phone_${opportunity.id}`}>Numero di telefono</Label>
+                        <Input
+                            id={`requester_phone_${opportunity.id}`}
+                            value={form.data.requester_phone}
+                            onChange={(event) => form.setData('requester_phone', event.target.value)}
+                            placeholder="Es. +39 333 1234567"
+                            aria-invalid={form.errors.requester_phone ? 'true' : 'false'}
+                        />
+                        <InputError message={form.errors.requester_phone} />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            Annulla
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={form.processing}
+                            className="bg-amber-500 text-white hover:bg-amber-600"
+                        >
+                            Invia richiesta
+                        </Button>
+                    </div>
+                </form>
             </DialogContent>
         </Dialog>
     );
@@ -384,6 +544,9 @@ export default function MergeAcquisitionIndex({
                                 triggerIcon={<Trash2 className="size-4" />}
                                 ariaLabel={`Elimina ${row.original.opportunityCode}`}
                             />
+                        ) : null}
+                        {row.original.canRequestContact ? (
+                            <ContactRequestDialog opportunity={row.original} />
                         ) : null}
                         <ConfirmActionDialog
                             triggerLabel=""

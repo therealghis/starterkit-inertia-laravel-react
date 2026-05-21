@@ -315,7 +315,6 @@ class MergeAcquisitionSeeder extends Seeder {
             foreach ($data['contact_requests'] as $contactRequest) {
                 MergeAcquisitionContactRequest::query()->create([
                     'merge_acquisition_id' => $mergeAcquisition->id,
-                    'email_id' => null,
                     'requester_name' => $contactRequest['requester_name'],
                     'requester_surname' => $contactRequest['requester_surname'],
                     'requester_email' => $contactRequest['requester_email'],

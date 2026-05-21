@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MergeAcquisitionController;
+use App\Http\Controllers\MergeAcquisitionContactRequestController;
 use App\Http\Controllers\MergeAcquisitionFavoriteController;
 use App\Http\Controllers\MyOppurtunitiesController;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +22,7 @@ Route::put('/locale/{locale}', function (Request $request, string $locale): Redi
 })->name('locale.update');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get(
         'merge_acquisition/buy_side',
         [MergeAcquisitionController::class, 'buySide'],
@@ -52,6 +54,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'merge_acquisition/{mergeAcquisition}/favorite',
         [MergeAcquisitionFavoriteController::class, 'destroy'],
     )->name('merge_acquisition.favorite.destroy');
+    Route::post(
+        'merge_acquisition/{mergeAcquisition}/contact-request',
+        [MergeAcquisitionContactRequestController::class, 'store'],
+    )->name('merge_acquisition.contact_request.store');
 });
 
 require __DIR__.'/settings.php';
