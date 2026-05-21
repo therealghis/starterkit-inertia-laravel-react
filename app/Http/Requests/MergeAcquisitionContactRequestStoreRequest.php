@@ -17,6 +17,7 @@ class MergeAcquisitionContactRequestStoreRequest extends FormRequest {
         return [
             'requester_name' => ['required', 'string', 'max:255'],
             'requester_surname' => ['required', 'string', 'max:255'],
+            'requester_email' => ['required', 'string', 'email', 'max:255'],
             'requester_phone' => ['required', 'string', 'max:255'],
         ];
     }
@@ -28,6 +29,7 @@ class MergeAcquisitionContactRequestStoreRequest extends FormRequest {
         return [
             'requester_name' => 'nome',
             'requester_surname' => 'cognome',
+            'requester_email' => 'email',
             'requester_phone' => 'numero di telefono',
         ];
     }

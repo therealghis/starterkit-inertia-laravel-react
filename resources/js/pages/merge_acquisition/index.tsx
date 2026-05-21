@@ -280,6 +280,7 @@ function ContactRequestDialog({ opportunity }: { opportunity: OpportunityRow }) 
     const form = useForm({
         requester_name: defaults.requesterName,
         requester_surname: defaults.requesterSurname,
+        requester_email: auth.user.email,
         requester_phone: '',
     });
 
@@ -292,6 +293,7 @@ function ContactRequestDialog({ opportunity }: { opportunity: OpportunityRow }) 
                 if (open) {
                     form.setData('requester_name', defaults.requesterName);
                     form.setData('requester_surname', defaults.requesterSurname);
+                    form.setData('requester_email', auth.user.email);
                     form.setData('requester_phone', '');
                     form.clearErrors();
                 }
@@ -368,6 +370,19 @@ function ContactRequestDialog({ opportunity }: { opportunity: OpportunityRow }) 
                             />
                             <InputError message={form.errors.requester_surname} />
                         </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor={`requester_email_${opportunity.id}`}>Email</Label>
+                        <Input
+                            id={`requester_email_${opportunity.id}`}
+                            type="email"
+                            value={form.data.requester_email}
+                            onChange={(event) => form.setData('requester_email', event.target.value)}
+                            placeholder="Es. mario.rossi@example.com"
+                            aria-invalid={form.errors.requester_email ? 'true' : 'false'}
+                        />
+                        <InputError message={form.errors.requester_email} />
                     </div>
 
                     <div className="space-y-2">
