@@ -66,4 +66,8 @@ class MergeAcquisition extends Model {
     public function contactRequests(): HasMany {
         return $this->hasMany(MergeAcquisitionContactRequest::class);
     }
+
+    public function dueDiligences(): HasMany {
+        return $this->hasMany(DueDiligence::class);
+    }
 }
