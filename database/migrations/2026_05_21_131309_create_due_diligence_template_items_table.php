@@ -23,7 +23,7 @@ return new class () extends Migration {
             $table->softDeletes();
 
             $table->index('due_diligence_template_id');
-            $table->index(['due_diligence_template_id', 'sort_order']);
+            $table->index('sort_order');
             $table->index('is_active');
         });
     }

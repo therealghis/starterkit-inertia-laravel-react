@@ -33,7 +33,7 @@ return new class () extends Migration {
             $table->softDeletes();
 
             $table->index('mimetype');
-            $table->index(['due_diligence_item_id', 'created_at']);
+            $table->index('created_at');
         });
     }
 

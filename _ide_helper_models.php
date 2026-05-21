@@ -14,6 +14,194 @@
 namespace App\Models{
 /**
  * @property int $id
+ * @property int $merge_acquisition_id
+ * @property int|null $due_diligence_template_id
+ * @property string $title
+ * @property int|null $year
+ * @property string $status
+ * @property string|null $company_notes
+ * @property string|null $admin_notes
+ * @property int|null $created_by_id
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \Carbon\CarbonImmutable|null $deleted_at
+ * @property-read \App\Models\User|null $createdBy
+ * @property-read \App\Models\DueDiligenceTemplate|null $dueDiligenceTemplate
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DueDiligenceItem> $items
+ * @property-read int|null $items_count
+ * @property-read \App\Models\MergeAcquisition $mergeAcquisition
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereAdminNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereCompanyNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereCreatedById($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereDueDiligenceTemplateId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereMergeAcquisitionId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence whereYear($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligence withoutTrashed()
+ */
+	class DueDiligence extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $due_diligence_id
+ * @property int|null $due_diligence_template_item_id
+ * @property string $entity
+ * @property string $topic
+ * @property string $request_text
+ * @property string $status
+ * @property string|null $company_notes
+ * @property string|null $admin_notes
+ * @property bool $is_custom
+ * @property int $sort_order
+ * @property int|null $created_by_id
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \Carbon\CarbonImmutable|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DueDiligenceItemAttachment> $attachments
+ * @property-read int|null $attachments_count
+ * @property-read \App\Models\User|null $createdBy
+ * @property-read \App\Models\DueDiligence|null $dueDiligence
+ * @property-read \App\Models\DueDiligenceTemplateItem|null $dueDiligenceTemplateItem
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereAdminNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereCompanyNotes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereCreatedById($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereDueDiligenceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereDueDiligenceTemplateItemId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereEntity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereIsCustom($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereRequestText($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereSortOrder($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereTopic($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItem withoutTrashed()
+ */
+	class DueDiligenceItem extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $due_diligence_item_id
+ * @property int|null $uploaded_by_id
+ * @property string $filename
+ * @property string $mimetype
+ * @property string $file_path
+ * @property string $disk
+ * @property int|null $size
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \Carbon\CarbonImmutable|null $deleted_at
+ * @property-read \App\Models\DueDiligenceItem|null $dueDiligenceItem
+ * @property-read \App\Models\User|null $uploadedBy
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereDisk($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereDueDiligenceItemId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereFilePath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereFilename($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereMimetype($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereSize($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment whereUploadedById($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceItemAttachment withoutTrashed()
+ */
+	class DueDiligenceItemAttachment extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property string $name
+ * @property string|null $description
+ * @property bool $is_active
+ * @property int|null $created_by_id
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \Carbon\CarbonImmutable|null $deleted_at
+ * @property-read \App\Models\User|null $createdBy
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate whereCreatedById($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplate withoutTrashed()
+ */
+	class DueDiligenceTemplate extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
+ * @property int $due_diligence_template_id
+ * @property string $entity
+ * @property string $topic
+ * @property string $request_text
+ * @property int $sort_order
+ * @property bool $is_active
+ * @property \Carbon\CarbonImmutable|null $created_at
+ * @property \Carbon\CarbonImmutable|null $updated_at
+ * @property \Carbon\CarbonImmutable|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DueDiligenceItem> $dueDiligenceItems
+ * @property-read int|null $due_diligence_items_count
+ * @property-read \App\Models\DueDiligenceTemplate|null $dueDiligenceTemplate
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereDueDiligenceTemplateId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereEntity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereRequestText($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereSortOrder($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereTopic($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DueDiligenceTemplateItem withoutTrashed()
+ */
+	class DueDiligenceTemplateItem extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property int $user_id
  * @property int|null $merge_acquisition_economic_activity_id
  * @property string $identification_code
@@ -42,6 +230,8 @@ namespace App\Models{
  * @property-read int|null $audits_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MergeAcquisitionContactRequest> $contactRequests
  * @property-read int|null $contact_requests_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\DueDiligence> $dueDiligences
+ * @property-read int|null $due_diligences_count
  * @property-read \App\Models\MergeAcquisitionEconomicActivity|null $economicActivity
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\MergeAcquisitionFavoritePerson> $favoritePeople
  * @property-read int|null $favorite_people_count
@@ -130,7 +320,6 @@ namespace App\Models{
 /**
  * @property int $id
  * @property int $merge_acquisition_id
- * @property int|null $email_id
  * @property string $requester_name
  * @property string $requester_surname
  * @property string $requester_email
@@ -142,7 +331,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MergeAcquisitionContactRequest newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MergeAcquisitionContactRequest query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MergeAcquisitionContactRequest whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MergeAcquisitionContactRequest whereEmailId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MergeAcquisitionContactRequest whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MergeAcquisitionContactRequest whereMergeAcquisitionId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MergeAcquisitionContactRequest whereRequesterEmail($value)
