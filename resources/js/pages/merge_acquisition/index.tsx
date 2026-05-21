@@ -11,8 +11,10 @@ import {
     Pencil,
     ScanSearch,
     Star,
+    Trash2,
 } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
+import { destroy as destroyMergeAcquisition } from '@/actions/App/Http/Controllers/MergeAcquisitionController';
 import {
     destroy as destroyFavorite,
     store as storeFavorite,
@@ -112,6 +114,7 @@ type OpportunityRow = {
     atecoCode: string;
     headquarters: string;
     favorite: boolean;
+    canDelete: boolean;
     companyName: string;
     companyDescription: string;
 };
@@ -344,6 +347,13 @@ export default function MergeAcquisitionIndex({
         });
     }, []);
 
+    const deleteOpportunity = useCallback((opportunityId: number) => {
+        router.visit(destroyMergeAcquisition(opportunityId), {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }, []);
+
     const columns = useMemo<ColumnDef<OpportunityRow>[]>(
         () => [
             {
@@ -360,6 +370,20 @@ export default function MergeAcquisitionIndex({
                                     <span className="sr-only">Modifica</span>
                                 </Link>
                             </Button>
+                        ) : null}
+                        {row.original.canDelete ? (
+                            <ConfirmActionDialog
+                                triggerLabel=""
+                                title="Eliminare l'opportunità?"
+                                description={`Vuoi eliminare l'opportunità ${row.original.opportunityCode}? L'azione non può essere annullata.`}
+                                confirmLabel="Elimina opportunità"
+                                onConfirm={() => deleteOpportunity(row.original.id)}
+                                variant="outline"
+                                confirmVariant="destructive"
+                                size="icon"
+                                triggerIcon={<Trash2 className="size-4" />}
+                                ariaLabel={`Elimina ${row.original.opportunityCode}`}
+                            />
                         ) : null}
                         <ConfirmActionDialog
                             triggerLabel=""
@@ -461,7 +485,7 @@ export default function MergeAcquisitionIndex({
                 ),
             },
         ],
-        [isMineListing, toggleFavorite],
+        [deleteOpportunity, isMineListing, toggleFavorite],
     );
 
     const handleQueryChange = useCallback(

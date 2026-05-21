@@ -147,6 +147,7 @@ class MergeAcquisitionController extends Controller {
                     'atecoCode' => $mergeAcquisition->ateco_code ?? 'N/D',
                     'headquarters' => $this->formatHeadquarters($mergeAcquisition),
                     'favorite' => $mergeAcquisition->favoritePeople->isNotEmpty(),
+                    'canDelete' => $this->limitToAuthenticatedUser(),
                     'companyName' => $mergeAcquisition->company_name ?? 'N/D',
                     'companyDescription' => $mergeAcquisition->company_description ?? 'N/D',
                 ],
@@ -382,8 +383,12 @@ class MergeAcquisitionController extends Controller {
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(MergeAcquisition $mergeAcquisition): void {
+    public function destroy(MergeAcquisition $mergeAcquisition): RedirectResponse {
         $this->ensureOwnership($mergeAcquisition);
+
+        $mergeAcquisition->delete();
+
+        return $this->limitToAuthenticatedUser() ? to_route('merge_acquisition_mine.index') : to_route('merge_acquisition.index');
     }
 
     protected function baseListingQuery(Request $request): Builder {
