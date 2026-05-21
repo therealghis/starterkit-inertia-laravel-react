@@ -18,7 +18,7 @@ enum DueDiligenceItemStatus: string {
         };
     }
 
-    public function values(): array {
+    public static function values(): array {
         return [
             self::OPEN,
             self::IN_PROGRESS,
