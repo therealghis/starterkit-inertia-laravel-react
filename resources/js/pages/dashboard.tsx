@@ -3,14 +3,12 @@ import type { ReactNode } from 'react';
 import {
     Area,
     AreaChart,
-    Bar,
-    BarChart,
     CartesianGrid,
     Cell,
     Pie,
     PieChart,
     XAxis,
-    YAxis,
+    YAxis
 } from 'recharts';
 import {
     ArrowUpRight,
@@ -41,7 +39,7 @@ import {
 import {
     ChartContainer,
     ChartTooltip,
-    ChartTooltipContent,
+    ChartTooltipContent
 } from '@/components/ui/chart';
 import {
     PageHero,
@@ -112,13 +110,6 @@ const contactTrendChartConfig = {
     value: {
         label: 'Richieste',
         color: 'var(--color-chart-3)',
-    },
-} as const;
-
-const topSignalsChartConfig = {
-    totalSignalsCount: {
-        label: 'Segnali totali',
-        color: 'var(--color-chart-1)',
     },
 } as const;
 
@@ -193,11 +184,6 @@ export default function Dashboard({
             fill: 'var(--color-chart-5)',
         },
     ];
-
-    const topSignalsChartData = topInterestingOpportunities.map((opportunity) => ({
-        opportunityCode: opportunity.opportunityCode,
-        totalSignalsCount: opportunity.totalSignalsCount,
-    }));
 
     const totalRequestsInRange = contactRequestsReceivedTrend.reduce(
         (total, item) => total + item.value,
@@ -488,46 +474,7 @@ export default function Dashboard({
                     </div>
                 </section>
 
-                <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-                    <AppCard tone="primary">
-                        <AppCardHeader className="space-y-2">
-                            <AppCardDescription className="text-[11px] font-semibold tracking-[0.18em] uppercase">
-                                Top opportunità
-                            </AppCardDescription>
-                            <AppCardTitle className="text-2xl tracking-tight">
-                                Più interessanti per segnali ricevuti
-                            </AppCardTitle>
-                        </AppCardHeader>
-                        <AppCardContent>
-                            <ChartContainer
-                                config={topSignalsChartConfig}
-                                className="h-[300px] w-full"
-                            >
-                                <BarChart
-                                    data={topSignalsChartData}
-                                    layout="vertical"
-                                    margin={{ left: 12, right: 12 }}
-                                >
-                                    <CartesianGrid horizontal={false} />
-                                    <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
-                                    <YAxis
-                                        type="category"
-                                        dataKey="opportunityCode"
-                                        tickLine={false}
-                                        axisLine={false}
-                                        width={92}
-                                    />
-                                    <ChartTooltip content={<ChartTooltipContent hideIndicator />} />
-                                    <Bar
-                                        dataKey="totalSignalsCount"
-                                        fill="var(--color-totalSignalsCount)"
-                                        radius={10}
-                                    />
-                                </BarChart>
-                            </ChartContainer>
-                        </AppCardContent>
-                    </AppCard>
-
+                <section>
                     <AppCard tone="default">
                         <AppCardHeader className="space-y-2">
                             <AppCardDescription className="text-[11px] font-semibold tracking-[0.18em] uppercase">
