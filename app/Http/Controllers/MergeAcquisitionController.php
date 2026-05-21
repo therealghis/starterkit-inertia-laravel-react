@@ -139,22 +139,10 @@ class MergeAcquisitionController extends Controller {
                 ],
             ],
             'opportunities' => $opportunities->getCollection()->map(
-                fn (MergeAcquisition $mergeAcquisition): array => [
-                    'id' => $mergeAcquisition->id,
-                    'opportunityCode' => $mergeAcquisition->identification_code,
-                    'operationType' => $mergeAcquisition->intent_type,
-                    'activitySector' => $mergeAcquisition->economicActivity?->activity_name ?? 'N/D',
-                    'legalEntity' => $mergeAcquisition->legal_entity ?? 'N/D',
-                    'product' => $mergeAcquisition->product ?? 'N/D',
-                    'atecoCode' => $mergeAcquisition->ateco_code ?? 'N/D',
-                    'headquarters' => $this->formatHeadquarters($mergeAcquisition),
-                    'favorite' => $mergeAcquisition->favoritePeople->isNotEmpty(),
-                    'canDelete' => $this->limitToAuthenticatedUser(),
-                    'canRequestContact' => $user !== null && $mergeAcquisition->user_id !== $user->id,
-                    'hasRequestedContact' => $mergeAcquisition->contactRequests->isNotEmpty(),
-                    'companyName' => $mergeAcquisition->company_name ?? 'N/D',
-                    'companyDescription' => $mergeAcquisition->company_description ?? 'N/D',
-                ],
+                fn (MergeAcquisition $mergeAcquisition): array => $this->mapOpportunityRow(
+                    $mergeAcquisition,
+                    $user?->id,
+                ),
             )->values(),
             'tableState' => [
                 'columnFilters' => array_values(array_filter([
@@ -474,6 +462,52 @@ class MergeAcquisitionController extends Controller {
         }
 
         return null;
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     opportunityCode: string,
+     *     operationType: string,
+     *     activitySector: string,
+     *     legalEntity: string,
+     *     product: string,
+     *     atecoCode: string,
+     *     headquarters: string,
+     *     favorite: bool,
+     *     canDelete: bool,
+     *     canViewSensitiveDetails: bool,
+     *     canRequestContact: bool,
+     *     hasRequestedContact: bool,
+     *     companyName: string,
+     *     companyDescription: string
+     * }
+     */
+    private function mapOpportunityRow(MergeAcquisition $mergeAcquisition, ?int $authenticatedUserId): array {
+        $canViewSensitiveDetails = $mergeAcquisition->user_id == $authenticatedUserId;
+
+        return [
+            'id' => $mergeAcquisition->id,
+            'opportunityCode' => $mergeAcquisition->identification_code,
+            'operationType' => $mergeAcquisition->intent_type,
+            'activitySector' => $mergeAcquisition->economicActivity?->activity_name ?? 'N/D',
+            'legalEntity' => $mergeAcquisition->legal_entity ?? 'N/D',
+            'product' => $mergeAcquisition->product ?? 'N/D',
+            'atecoCode' => $mergeAcquisition->ateco_code ?? 'N/D',
+            'headquarters' => $this->formatHeadquarters($mergeAcquisition),
+            'favorite' => $mergeAcquisition->favoritePeople->isNotEmpty(),
+            'canDelete' => $this->limitToAuthenticatedUser(),
+            'canViewSensitiveDetails' => $canViewSensitiveDetails,
+            'canRequestContact' => $authenticatedUserId !== null
+                && $mergeAcquisition->user_id !== $authenticatedUserId,
+            'hasRequestedContact' => $mergeAcquisition->contactRequests->isNotEmpty(),
+            'companyName' => $canViewSensitiveDetails
+                ? ($mergeAcquisition->company_name ?? 'N/D')
+                : 'N/D',
+            'companyDescription' => $canViewSensitiveDetails
+                ? ($mergeAcquisition->company_description ?? 'N/D')
+                : 'N/D',
+        ];
     }
 
     private function ensureOwnership(MergeAcquisition $mergeAcquisition): void {

@@ -121,6 +121,7 @@ type OpportunityRow = {
     headquarters: string;
     favorite: boolean;
     canDelete: boolean;
+    canViewSensitiveDetails: boolean;
     canRequestContact: boolean;
     hasRequestedContact: boolean;
     companyName: string;
@@ -537,7 +538,9 @@ export default function MergeAcquisitionIndex({
                 enableSorting: false,
                 cell: ({ row }) => (
                     <div className="flex flex-wrap items-center gap-2">
-                        <SensitiveDetailsDialog opportunity={row.original} />
+                        {row.original.canViewSensitiveDetails ? (
+                            <SensitiveDetailsDialog opportunity={row.original} />
+                        ) : null}
                         {isMineListing ? (
                             <Button asChild variant="outline" size="icon">
                                 <Link href={mergeAcquisitionEdit(row.original.id)}>
