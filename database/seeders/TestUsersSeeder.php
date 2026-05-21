@@ -33,6 +33,30 @@ class TestUsersSeeder extends Seeder {
                 'name' => 'Test Customer 3',
                 'email' => 'customer3@local.test',
             ],
+            [
+                'name' => 'Test Customer 4',
+                'email' => 'customer4@local.test',
+            ],
+            [
+                'name' => 'Test Customer 5',
+                'email' => 'customer5@local.test',
+            ],
+            [
+                'name' => 'Test Advisor 1',
+                'email' => 'advisor1@local.test',
+            ],
+            [
+                'name' => 'Test Advisor 2',
+                'email' => 'advisor2@local.test',
+            ],
+            [
+                'name' => 'Test Investor 1',
+                'email' => 'investor1@local.test',
+            ],
+            [
+                'name' => 'Test Investor 2',
+                'email' => 'investor2@local.test',
+            ],
         ];
 
         foreach ($users as $user) {

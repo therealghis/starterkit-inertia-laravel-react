@@ -54,6 +54,41 @@ class DueDiligenceTemplateSeeder extends Seeder {
                 'sort_order' => 50,
                 'is_active' => true,
             ],
+            [
+                'entity' => 'Lavoro',
+                'topic' => 'Organizzazione',
+                'request_text' => 'Organigramma aziendale aggiornato',
+                'sort_order' => 60,
+                'is_active' => true,
+            ],
+            [
+                'entity' => 'Lavoro',
+                'topic' => 'Dipendenti',
+                'request_text' => 'Elenco dipendenti con ruolo, anzianita e inquadramento',
+                'sort_order' => 70,
+                'is_active' => true,
+            ],
+            [
+                'entity' => 'IT',
+                'topic' => 'Sistemi informativi',
+                'request_text' => 'Panoramica infrastruttura IT e principali software utilizzati',
+                'sort_order' => 80,
+                'is_active' => true,
+            ],
+            [
+                'entity' => 'Legale',
+                'topic' => 'Contenzioso',
+                'request_text' => 'Elenco contenziosi e precontenziosi in corso',
+                'sort_order' => 90,
+                'is_active' => true,
+            ],
+            [
+                'entity' => 'Commerciale',
+                'topic' => 'Clienti',
+                'request_text' => 'Top clienti con incidenza sul fatturato degli ultimi tre esercizi',
+                'sort_order' => 100,
+                'is_active' => true,
+            ],
         ];
 
         foreach ($items as $item) {
