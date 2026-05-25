@@ -14,7 +14,11 @@ class DueDiligenceCustomItemController extends Controller {
         DueDiligence $dueDiligence,
         CreateCustomDueDiligenceItem $action
     ): RedirectResponse {
-        $action->handle($dueDiligence, $request->validated());
+        $action->handle(
+            $dueDiligence,
+            $request->validated(),
+            $request->user(),
+        );
 
         return back(status: 303);
     }

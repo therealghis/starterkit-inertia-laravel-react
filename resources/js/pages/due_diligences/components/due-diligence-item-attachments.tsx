@@ -1,6 +1,7 @@
 import { router, useForm } from '@inertiajs/react';
 import { Download, LoaderCircle, Paperclip, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
+import ConfirmActionDialog from '@/components/confirm-action-dialog';
 import FileUpload from '@/components/file-upload';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -97,10 +98,6 @@ export default function DueDiligenceItemAttachments({
     };
 
     const handleDelete = (attachment: DueDiligenceItemAttachment) => {
-        if (!window.confirm(`Eliminare l'allegato "${attachment.filename}"?`)) {
-            return;
-        }
-
         setDeletingAttachmentId(attachment.id);
 
         router.delete(attachment.delete_url, {
@@ -227,20 +224,21 @@ export default function DueDiligenceItemAttachments({
                                             Download
                                         </a>
                                     </Button>
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => handleDelete(attachment)}
+                                    <ConfirmActionDialog
+                                        triggerLabel="Elimina"
+                                        title="Eliminare l'allegato?"
+                                        description={`L'allegato "${attachment.filename}" verra eliminato da questa riga della due diligence.`}
+                                        confirmLabel="Elimina allegato"
+                                        onConfirm={() => handleDelete(attachment)}
                                         disabled={isDeleting}
-                                    >
-                                        {isDeleting ? (
-                                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Trash2 className="h-4 w-4" />
-                                        )}
-                                        Elimina
-                                    </Button>
+                                        triggerIcon={
+                                            isDeleting ? (
+                                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="h-4 w-4" />
+                                            )
+                                        }
+                                    />
                                 </div>
                             </li>
                         );

@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { FolderSearch, ListChecks, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import ConfirmActionDialog from '@/components/confirm-action-dialog';
 import AppLayout from '@/layouts/app-layout';
 import DueDiligenceCustomItemDialog from '@/pages/due_diligences/components/due-diligence-custom-item-dialog';
 import DueDiligenceItemAttachments from '@/pages/due_diligences/components/due-diligence-item-attachments';
@@ -216,11 +217,7 @@ export default function DueDiligencesShow({
         return item.status === activeFilter;
     });
 
-    const handleDeleteCustomItem = (itemId: number, topic: string) => {
-        if (!window.confirm(`Eliminare la riga custom "${topic}"?`)) {
-            return;
-        }
-
+    const handleDeleteCustomItem = (itemId: number) => {
         setDeletingItemId(itemId);
 
         router.delete(destroyDueDiligenceCustomItem(itemId), {
@@ -414,21 +411,21 @@ export default function DueDiligencesShow({
 
                                                     <TableCell className="align-top whitespace-normal">
                                                         {item.is_custom ? (
-                                                            <Button
-                                                                type="button"
-                                                                variant="destructive"
-                                                                size="sm"
-                                                                onClick={() =>
+                                                            <ConfirmActionDialog
+                                                                triggerLabel="Elimina riga custom"
+                                                                title="Eliminare la riga custom?"
+                                                                description={`La riga "${item.topic}" verra eliminata da questa due diligence.`}
+                                                                confirmLabel="Elimina riga"
+                                                                onConfirm={() =>
                                                                     handleDeleteCustomItem(
                                                                         item.id,
-                                                                        item.topic,
                                                                     )
                                                                 }
                                                                 disabled={isDeleting}
-                                                            >
-                                                                <Trash2 className="size-4" />
-                                                                Elimina riga custom
-                                                            </Button>
+                                                                triggerIcon={
+                                                                    <Trash2 className="size-4" />
+                                                                }
+                                                            />
                                                         ) : (
                                                             <span className="text-sm text-muted-foreground">
                                                                 Da template

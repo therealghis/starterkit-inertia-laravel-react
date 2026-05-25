@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Info, PencilLine, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import ConfirmActionDialog from '@/components/confirm-action-dialog';
 import InputError from '@/components/input-error';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -286,10 +287,6 @@ export default function DueDiligenceTemplatesEdit({
     };
 
     const handleDeleteItem = (item: TemplateItemRecord) => {
-        if (!window.confirm('Confermi l\'eliminazione di questa riga checklist?')) {
-            return;
-        }
-
         router.delete(item.delete_url, {
             preserveScroll: true,
         });
@@ -533,17 +530,18 @@ export default function DueDiligenceTemplatesEdit({
                                                             }
                                                         />
 
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            onClick={() =>
+                                                        <ConfirmActionDialog
+                                                            triggerLabel="Elimina"
+                                                            title="Eliminare la riga checklist?"
+                                                            description={`La riga "${item.topic}" verra eliminata dal template. Questa azione non modifica le due diligence gia create.`}
+                                                            confirmLabel="Elimina riga"
+                                                            onConfirm={() =>
                                                                 handleDeleteItem(item)
                                                             }
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                            Elimina
-                                                        </Button>
+                                                            triggerIcon={
+                                                                <Trash2 className="size-4" />
+                                                            }
+                                                        />
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
