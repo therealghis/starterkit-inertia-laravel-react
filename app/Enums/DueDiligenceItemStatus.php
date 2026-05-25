@@ -8,8 +8,8 @@ enum DueDiligenceItemStatus: string {
     public const string COMPLETED = 'completed';
     public const string NOT_APPLICABLE = 'not_applicable';
 
-    public function label(): string {
-        return match ($this) {
+    public static function label($status): string {
+        return match ($status) {
             self::OPEN => 'Aperto',
             self::IN_PROGRESS => 'In corso',
             self::COMPLETED => 'Completato',

@@ -158,7 +158,7 @@ class DueDiligenceController extends Controller {
             'statuses' => collect(DueDiligenceItemStatus::values())
                 ->map(fn (string $status): array => [
                     'value' => $status,
-                    'label' => $this->statusLabel($status),
+                    'label' => DueDiligenceItemStatus::label($status),
                 ])
                 ->values(),
             'summary' => [
@@ -180,15 +180,5 @@ class DueDiligenceController extends Controller {
         $dueDiligence->delete();
 
         return to_route('merge_acquisition.due_diligences.index', $mergeAcquisition);
-    }
-
-    private function statusLabel(string $status): string {
-        return match ($status) {
-            DueDiligenceItemStatus::OPEN => 'Aperto',
-            DueDiligenceItemStatus::IN_PROGRESS => 'In corso',
-            DueDiligenceItemStatus::COMPLETED => 'Completato',
-            DueDiligenceItemStatus::NOT_APPLICABLE => 'Non applicabile',
-            default => 'N/A',
-        };
     }
 }
