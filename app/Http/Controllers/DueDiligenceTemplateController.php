@@ -18,16 +18,15 @@ class DueDiligenceTemplateController extends Controller {
             ->get();
 
         return Inertia::render('due_diligence_templates/index', [
-            'dueDiligenceTemplates' => $dueDiligenceTemplates
+            'templates' => $dueDiligenceTemplates
                 ->map(fn (DueDiligenceTemplate $dueDiligenceTemplate): array => [
                     'id' => $dueDiligenceTemplate->id,
                     'name' => $dueDiligenceTemplate->name,
                     'description' => $dueDiligenceTemplate->description,
                     'is_active' => $dueDiligenceTemplate->is_active,
                     'items_count' => $dueDiligenceTemplate->items_count,
-                    'created_by_id' => $dueDiligenceTemplate->created_by_id,
-                    'created_at' => $dueDiligenceTemplate->created_at,
-                    'updated_at' => $dueDiligenceTemplate->updated_at,
+                    'edit_url' => route('due_diligence_templates.edit', $dueDiligenceTemplate),
+                    'delete_url' => route('due_diligence_templates.destroy', $dueDiligenceTemplate),
                 ])
                 ->values(),
         ]);
