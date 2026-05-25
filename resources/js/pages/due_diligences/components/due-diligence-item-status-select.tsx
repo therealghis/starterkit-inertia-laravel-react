@@ -1,5 +1,5 @@
-import { useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import {
     Select,
     SelectContent,
@@ -23,30 +23,30 @@ export default function DueDiligenceItemStatusSelect({
     currentStatus,
     statuses,
 }: DueDiligenceItemStatusSelectProps) {
-    const form = useForm({
-        status: currentStatus,
-    });
+    const [selectedStatus, setSelectedStatus] = useState(currentStatus);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
-        form.setData('status', currentStatus);
+        setSelectedStatus(currentStatus);
     }, [currentStatus]);
 
     const handleValueChange = (selectedValue: string) => {
-        form.setData('status', selectedValue);
+        setSelectedStatus(selectedValue);
+        setIsProcessing(true);
 
-        form.patch(updateDueDiligenceItemStatus(itemId), {
-            data: {
-                status: selectedValue,
-            },
+        router.patch(updateDueDiligenceItemStatus(itemId), { status: selectedValue }, {
             preserveScroll: true,
+            onFinish: () => {
+                setIsProcessing(false);
+            },
         });
     };
 
     return (
         <Select
-            value={form.data.status}
+            value={selectedStatus}
             onValueChange={handleValueChange}
-            disabled={form.processing}
+            disabled={isProcessing}
         >
             <SelectTrigger className="w-full min-w-40" aria-label="Stato elemento due diligence">
                 <SelectValue placeholder="Seleziona stato" />
