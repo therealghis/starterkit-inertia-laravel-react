@@ -29,8 +29,8 @@ class UploadDueDiligenceItemAttachment {
             'size' => $file->getSize(),
         ]);
 
-        if ($item->status === DueDiligenceItemStatus::OPEN) {
-            $item->status = DueDiligenceItemStatus::IN_PROGRESS;
+        if ($item->status === DueDiligenceItemStatus::OPEN->value) {
+            $item->status = DueDiligenceItemStatus::IN_PROGRESS->value;
             $item->save();
         }
 
