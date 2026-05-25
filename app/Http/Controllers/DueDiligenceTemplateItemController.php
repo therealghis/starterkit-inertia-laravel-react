@@ -15,9 +15,8 @@ class DueDiligenceTemplateItemController extends Controller {
     ): RedirectResponse {
         $validated = $request->validated();
 
-        $sortOrder = array_key_exists('sort_order', $validated)
-            ? $validated['sort_order']
-            : (($dueDiligenceTemplate->items()->max('sort_order') ?? 0) + 10);
+        $sortOrder = $validated['sort_order']
+            ?? (($dueDiligenceTemplate->items()->max('sort_order') ?? 0) + 10);
 
         $dueDiligenceTemplate->items()->create([
             'entity' => $validated['entity'],
