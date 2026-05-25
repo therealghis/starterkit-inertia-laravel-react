@@ -53,7 +53,9 @@ const getAttachmentError = (
         return errors.attachments;
     }
 
-    return Object.entries(errors).find(([key, value]) => key.startsWith('attachments.') && value)?.[1];
+    return Object.entries(errors).find(
+        ([key, value]) => key.startsWith('attachments.') && value,
+    )?.[1];
 };
 
 export default function DueDiligenceItemAttachments({
@@ -134,7 +136,8 @@ export default function DueDiligenceItemAttachments({
                         <DialogHeader>
                             <DialogTitle>Carica allegati</DialogTitle>
                             <DialogDescription>
-                                Seleziona uno o più file da associare a questo elemento della due diligence.
+                                Seleziona uno o più file da associare a questo
+                                elemento della due diligence.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -143,7 +146,9 @@ export default function DueDiligenceItemAttachments({
                                 <FileUpload
                                     name="attachments"
                                     files={form.data.attachments}
-                                    onFilesChange={(files) => form.setData('attachments', files)}
+                                    onFilesChange={(files) =>
+                                        form.setData('attachments', files)
+                                    }
                                     disabled={form.processing}
                                     helperText="Formati supportati fino a 50 MB per file."
                                 />
@@ -178,7 +183,9 @@ export default function DueDiligenceItemAttachments({
                                     type="submit"
                                     disabled={form.processing || form.data.attachments.length === 0}
                                 >
-                                    {form.processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                                    {form.processing && (
+                                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                                    )}
                                     Conferma upload
                                 </Button>
                             </DialogFooter>
@@ -207,12 +214,14 @@ export default function DueDiligenceItemAttachments({
                                     </p>
                                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                         <span>{attachment.mimetype}</span>
-                                        {attachment.size !== null && <span>{formatBytes(attachment.size)}</span>}
+                                        {attachment.size !== null && (
+                                            <span>{formatBytes(attachment.size)}</span>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                    <Button asChild type="button" variant="outline" size="sm">
+                                    <Button asChild variant="outline" size="sm">
                                         <a href={attachment.download_url}>
                                             <Download className="h-4 w-4" />
                                             Download
