@@ -92,7 +92,6 @@ export default function DueDiligenceItemAttachments({
             preserveScroll: true,
             onSuccess: () => {
                 form.reset();
-                setIsDialogOpen(false);
             },
         });
     };
@@ -109,33 +108,116 @@ export default function DueDiligenceItemAttachments({
     };
 
     return (
-        <div className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
+            <div className="min-w-0 space-y-3 rounded-2xl border border-border/70 bg-muted/10 p-4">
                 <div>
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                         <Paperclip className="h-4 w-4" />
                         Allegati
                     </h3>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {attachments.length === 0
+                            ? 'Nessun file caricato.'
+                            : `${attachments.length} file collegati.`}
+                    </p>
                 </div>
 
-                <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
-                    <DialogTrigger asChild>
-                        <Button size="sm">
-                            <Upload className="h-4 w-4" />
-                            Carica allegati
-                        </Button>
-                    </DialogTrigger>
+                <DialogTrigger asChild>
+                    <Button size="sm" className="w-full">
+                        <Upload className="h-4 w-4" />
+                        Gestisci allegati
+                    </Button>
+                </DialogTrigger>
+            </div>
 
-                    <DialogContent className="sm:max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle>Carica allegati</DialogTitle>
-                            <DialogDescription>
-                                Seleziona uno o più file da associare a questo
-                                elemento della due diligence.
-                            </DialogDescription>
-                        </DialogHeader>
+            <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Gestisci allegati</DialogTitle>
+                    <DialogDescription>
+                        Visualizza i file già presenti e aggiungi nuovi allegati a questo
+                        elemento della due diligence.
+                    </DialogDescription>
+                </DialogHeader>
 
-                        <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="space-y-6">
+                    <div className="space-y-3">
+                        <div>
+                            <h4 className="text-sm font-semibold text-foreground">
+                                Allegati presenti
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                                Download ed eliminazione dei file già associati.
+                            </p>
+                        </div>
+
+                        {attachments.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+                                Nessun allegato presente.
+                            </div>
+                        ) : (
+                            <ul className="space-y-3">
+                                {attachments.map((attachment) => {
+                                    const isDeleting =
+                                        deletingAttachmentId === attachment.id;
+
+                                    return (
+                                        <li
+                                            key={attachment.id}
+                                            className="space-y-3 rounded-xl border border-border/70 bg-background/80 px-4 py-3"
+                                        >
+                                            <div className="min-w-0 space-y-1">
+                                                <p className="break-all text-sm font-medium text-foreground">
+                                                    {attachment.filename}
+                                                </p>
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                                    <span>{attachment.mimetype}</span>
+                                                    {attachment.size !== null && (
+                                                        <span>{formatBytes(attachment.size)}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button asChild variant="outline" size="sm">
+                                                    <a href={attachment.download_url}>
+                                                        <Download className="h-4 w-4" />
+                                                        Download
+                                                    </a>
+                                                </Button>
+                                                <ConfirmActionDialog
+                                                    triggerLabel="Elimina"
+                                                    title="Eliminare l'allegato?"
+                                                    description={`L'allegato "${attachment.filename}" verra eliminato da questa riga della due diligence.`}
+                                                    confirmLabel="Elimina allegato"
+                                                    onConfirm={() => handleDelete(attachment)}
+                                                    disabled={isDeleting}
+                                                    triggerIcon={
+                                                        isDeleting ? (
+                                                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-4 w-4" />
+                                                        )
+                                                    }
+                                                />
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </div>
+
+                    <form className="space-y-6" onSubmit={handleSubmit}>
+                        <div className="space-y-3">
+                            <div>
+                                <h4 className="text-sm font-semibold text-foreground">
+                                    Aggiungi allegati
+                                </h4>
+                                <p className="text-xs text-muted-foreground">
+                                    Seleziona uno o più file da associare a questo elemento.
+                                </p>
+                            </div>
+
                             <div className="space-y-2">
                                 <FileUpload
                                     name="attachments"
@@ -148,100 +230,45 @@ export default function DueDiligenceItemAttachments({
                                 />
                                 <InputError message={attachmentError} />
                             </div>
+                        </div>
 
-                            {form.progress && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                        <span>Upload in corso</span>
-                                        <span>{form.progress.percentage}%</span>
-                                    </div>
-                                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                                        <div
-                                            className="h-full rounded-full bg-primary transition-all"
-                                            style={{ width: `${form.progress.percentage}%` }}
-                                        />
-                                    </div>
+                        {form.progress && (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                    <span>Upload in corso</span>
+                                    <span>{form.progress.percentage}%</span>
                                 </div>
-                            )}
-
-                            <DialogFooter>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsDialogOpen(false)}
-                                    disabled={form.processing}
-                                >
-                                    Annulla
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={form.processing || form.data.attachments.length === 0}
-                                >
-                                    {form.processing && (
-                                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                                    )}
-                                    Conferma upload
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-            </div>
-
-            {attachments.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
-                    Nessun allegato presente.
-                </div>
-            ) : (
-                <ul className="space-y-3">
-                    {attachments.map((attachment) => {
-                        const isDeleting = deletingAttachmentId === attachment.id;
-
-                        return (
-                            <li
-                                key={attachment.id}
-                                className="flex flex-col gap-3 rounded-lg border border-border/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                                <div className="min-w-0 space-y-1">
-                                    <p className="break-all text-sm font-medium text-foreground">
-                                        {attachment.filename}
-                                    </p>
-                                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                        <span>{attachment.mimetype}</span>
-                                        {attachment.size !== null && (
-                                            <span>{formatBytes(attachment.size)}</span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-2">
-                                    <Button asChild variant="outline" size="sm">
-                                        <a href={attachment.download_url}>
-                                            <Download className="h-4 w-4" />
-                                            Download
-                                        </a>
-                                    </Button>
-                                    <ConfirmActionDialog
-                                        triggerLabel="Elimina"
-                                        title="Eliminare l'allegato?"
-                                        description={`L'allegato "${attachment.filename}" verra eliminato da questa riga della due diligence.`}
-                                        confirmLabel="Elimina allegato"
-                                        onConfirm={() => handleDelete(attachment)}
-                                        disabled={isDeleting}
-                                        triggerIcon={
-                                            isDeleting ? (
-                                                <LoaderCircle className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Trash2 className="h-4 w-4" />
-                                            )
-                                        }
+                                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                                    <div
+                                        className="h-full rounded-full bg-primary transition-all"
+                                        style={{ width: `${form.progress.percentage}%` }}
                                     />
                                 </div>
-                            </li>
-                        );
-                    })}
-                </ul>
-            )}
-        </div>
+                            </div>
+                        )}
+
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsDialogOpen(false)}
+                                disabled={form.processing}
+                            >
+                                Chiudi
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={form.processing || form.data.attachments.length === 0}
+                            >
+                                {form.processing && (
+                                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                                )}
+                                Conferma upload
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }
