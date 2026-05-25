@@ -459,7 +459,7 @@ export default function DueDiligenceTemplatesEdit({
                             </div>
                         ) : (
                             <div className="overflow-hidden rounded-2xl border border-border/70">
-                                <Table>
+                                <Table className="table-fixed">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="w-24">Ordine</TableHead>
@@ -476,14 +476,18 @@ export default function DueDiligenceTemplatesEdit({
                                                 <TableCell className="align-top font-medium">
                                                     {item.sort_order}
                                                 </TableCell>
-                                                <TableCell className="align-top">
-                                                    {item.entity}
+                                                <TableCell className="align-top whitespace-normal">
+                                                    <p className="break-all text-foreground">
+                                                        {item.entity}
+                                                    </p>
                                                 </TableCell>
-                                                <TableCell className="align-top">
-                                                    {item.topic}
+                                                <TableCell className="align-top whitespace-normal">
+                                                    <p className="break-all text-foreground">
+                                                        {item.topic}
+                                                    </p>
                                                 </TableCell>
                                                 <TableCell className="whitespace-normal align-top">
-                                                    <p className="text-sm leading-6 text-muted-foreground">
+                                                    <p className="break-all text-sm leading-6 text-muted-foreground">
                                                         {item.request_text}
                                                     </p>
                                                 </TableCell>

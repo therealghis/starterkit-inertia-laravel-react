@@ -161,7 +161,7 @@ function ProductDialog({ opportunity }: { opportunity: OpportunityRow }) {
             <DialogTrigger asChild>
                 <button
                     type="button"
-                    className="line-clamp-2 cursor-pointer text-left text-sm leading-6 text-muted-foreground transition-colors hover:text-foreground"
+                    className="line-clamp-2 cursor-pointer text-left text-sm leading-6 text-muted-foreground transition-colors [overflow-wrap:anywhere] hover:text-foreground"
                 >
                     {opportunity.product}
                 </button>
@@ -185,7 +185,7 @@ function ProductDialog({ opportunity }: { opportunity: OpportunityRow }) {
                         <span className="text-sm text-muted-foreground">{opportunity.activitySector}</span>
                     </div>
 
-                    <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm leading-7 text-foreground/90">
+                    <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm leading-7 text-foreground/90 [overflow-wrap:anywhere]">
                         {opportunity.product}
                     </div>
                 </div>

@@ -515,12 +515,12 @@ export default function MergeAcquisitionEdit({
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <Table>
+                                <Table className="table-fixed">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>File</TableHead>
-                                            <TableHead>Tipo</TableHead>
-                                            <TableHead>Origine</TableHead>
+                                            <TableHead className="min-w-44">File</TableHead>
+                                            <TableHead className="min-w-32">Tipo</TableHead>
+                                            <TableHead className="min-w-72">Origine</TableHead>
                                             <TableHead className="w-20">Download</TableHead>
                                             <TableHead className="w-32">Stato</TableHead>
                                         </TableRow>
@@ -535,9 +535,15 @@ export default function MergeAcquisitionEdit({
                                         ) : (
                                             combinedAttachmentRows.map((attachment) => (
                                                 <TableRow key={attachment.key}>
-                                                    <TableCell className="font-medium">{attachment.filename}</TableCell>
-                                                    <TableCell>{attachment.mimetype}</TableCell>
-                                                    <TableCell className="max-w-[340px] truncate">{attachment.source}</TableCell>
+                                                    <TableCell className="font-medium whitespace-normal">
+                                                        <p className="break-all">{attachment.filename}</p>
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-normal">
+                                                        <p className="break-all">{attachment.mimetype}</p>
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-normal">
+                                                        <p className="break-all">{attachment.source}</p>
+                                                    </TableCell>
                                                     <TableCell>
                                                         {'downloadUrl' in attachment ? (
                                                             <Button
@@ -717,15 +723,15 @@ export default function MergeAcquisitionEdit({
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <Table>
+                                <Table className="table-fixed">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Anno</TableHead>
-                                            <TableHead>Sales</TableHead>
-                                            <TableHead>Income</TableHead>
-                                            <TableHead>PFN</TableHead>
-                                            <TableHead>EBITDA</TableHead>
-                                            <TableHead>Debt</TableHead>
+                                            <TableHead className="w-24">Anno</TableHead>
+                                            <TableHead className="min-w-36">Sales</TableHead>
+                                            <TableHead className="min-w-36">Income</TableHead>
+                                            <TableHead className="min-w-36">PFN</TableHead>
+                                            <TableHead className="min-w-36">EBITDA</TableHead>
+                                            <TableHead className="min-w-36">Debt</TableHead>
                                             <TableHead className="w-32">Stato</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -740,11 +746,21 @@ export default function MergeAcquisitionEdit({
                                             combinedFinancialRows.map((financial) => (
                                                 <TableRow key={financial.key}>
                                                     <TableCell className="font-medium">{financial.year}</TableCell>
-                                                    <TableCell>{financial.sales}</TableCell>
-                                                    <TableCell>{financial.income}</TableCell>
-                                                    <TableCell>{financial.pfn}</TableCell>
-                                                    <TableCell>{financial.ebitda}</TableCell>
-                                                    <TableCell>{financial.debt || 'N/D'}</TableCell>
+                                                    <TableCell className="whitespace-normal">
+                                                        <p className="break-all">{financial.sales}</p>
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-normal">
+                                                        <p className="break-all">{financial.income}</p>
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-normal">
+                                                        <p className="break-all">{financial.pfn}</p>
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-normal">
+                                                        <p className="break-all">{financial.ebitda}</p>
+                                                    </TableCell>
+                                                    <TableCell className="whitespace-normal">
+                                                        <p className="break-all">{financial.debt || 'N/D'}</p>
+                                                    </TableCell>
                                                     <TableCell>
                                                         <Badge variant={financial.status === 'Salvato' ? 'secondary' : 'outline'}>
                                                             {financial.status}

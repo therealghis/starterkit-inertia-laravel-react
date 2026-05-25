@@ -349,7 +349,7 @@ export default function DueDiligencesShow({
                             </div>
                         ) : (
                             <div className="overflow-hidden rounded-2xl border border-border/70">
-                                <Table>
+                                <Table className="table-fixed">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="min-w-40">Entità</TableHead>
@@ -369,7 +369,7 @@ export default function DueDiligencesShow({
                                                 <TableRow key={item.id}>
                                                     <TableCell className="align-top whitespace-normal">
                                                         <div className="space-y-1">
-                                                            <p className="font-medium text-foreground">
+                                                            <p className="break-all font-medium text-foreground">
                                                                 {item.entity}
                                                             </p>
                                                             <p className="text-xs text-muted-foreground">
@@ -379,13 +379,13 @@ export default function DueDiligencesShow({
                                                     </TableCell>
 
                                                     <TableCell className="align-top whitespace-normal">
-                                                        <p className="font-medium text-foreground">
+                                                        <p className="break-all font-medium text-foreground">
                                                             {item.topic}
                                                         </p>
                                                     </TableCell>
 
                                                     <TableCell className="align-top whitespace-normal">
-                                                        <p className="text-sm leading-6 text-foreground/90">
+                                                        <p className="break-all text-sm leading-6 text-foreground/90">
                                                             {item.request_text}
                                                         </p>
                                                     </TableCell>

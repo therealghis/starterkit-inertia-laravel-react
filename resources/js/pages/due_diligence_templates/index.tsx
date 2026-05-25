@@ -152,7 +152,7 @@ export default function DueDiligenceTemplatesIndex({
                             </div>
                         ) : (
                             <div className="overflow-hidden rounded-2xl border border-border/70">
-                                <Table>
+                                <Table className="table-fixed">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="min-w-56">Nome</TableHead>
@@ -166,12 +166,12 @@ export default function DueDiligenceTemplatesIndex({
                                         {templates.map((template) => (
                                             <TableRow key={template.id}>
                                                 <TableCell className="whitespace-normal align-top">
-                                                    <p className="font-medium text-foreground">
+                                                    <p className="break-all font-medium text-foreground">
                                                         {template.name}
                                                     </p>
                                                 </TableCell>
                                                 <TableCell className="whitespace-normal align-top">
-                                                    <p className="text-sm leading-6 text-muted-foreground">
+                                                    <p className="break-all text-sm leading-6 text-muted-foreground">
                                                         {template.description || 'Nessuna descrizione'}
                                                     </p>
                                                 </TableCell>

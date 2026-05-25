@@ -91,7 +91,7 @@ function DetailItem({ label, value }: DetailItemProps) {
     return (
         <div className="space-y-1 rounded-2xl border border-border/70 bg-background p-4">
             <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">{label}</p>
-            <p className="text-sm leading-6 text-foreground">{value}</p>
+            <p className="text-sm leading-6 text-foreground [overflow-wrap:anywhere]">{value}</p>
         </div>
     );
 }
@@ -267,13 +267,13 @@ export default function MergeAcquisitionShow({
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <Table>
+                            <Table className="table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>File</TableHead>
-                                        <TableHead>Tipo</TableHead>
-                                        <TableHead>Origine</TableHead>
-                                        <TableHead>Caricato il</TableHead>
+                                        <TableHead className="min-w-44">File</TableHead>
+                                        <TableHead className="min-w-32">Tipo</TableHead>
+                                        <TableHead className="min-w-72">Origine</TableHead>
+                                        <TableHead className="min-w-32">Caricato il</TableHead>
                                         <TableHead className="w-20">Download</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -287,10 +287,20 @@ export default function MergeAcquisitionShow({
                                     ) : (
                                         attachments.map((attachment) => (
                                             <TableRow key={attachment.id}>
-                                                <TableCell className="font-medium">{attachment.filename}</TableCell>
-                                                <TableCell>{attachment.mimetype}</TableCell>
-                                                <TableCell className="max-w-[340px] truncate">{attachment.file_path}</TableCell>
-                                                <TableCell>{attachment.created_at ?? 'N/D'}</TableCell>
+                                                <TableCell className="font-medium whitespace-normal">
+                                                    <p className="break-all">{attachment.filename}</p>
+                                                </TableCell>
+                                                <TableCell className="whitespace-normal">
+                                                    <p className="break-all">{attachment.mimetype}</p>
+                                                </TableCell>
+                                                <TableCell className="whitespace-normal">
+                                                    <p className="break-all">{attachment.file_path}</p>
+                                                </TableCell>
+                                                <TableCell className="whitespace-normal">
+                                                    <p className="[overflow-wrap:anywhere]">
+                                                        {attachment.created_at ?? 'N/D'}
+                                                    </p>
+                                                </TableCell>
                                                 <TableCell>
                                                     <Button asChild type="button" variant="outline" size="icon">
                                                         <a href={attachment.download_url} aria-label={`Scarica ${attachment.filename}`}>
@@ -331,15 +341,15 @@ export default function MergeAcquisitionShow({
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <Table>
+                            <Table className="table-fixed">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Anno</TableHead>
-                                        <TableHead>Sales</TableHead>
-                                        <TableHead>Income</TableHead>
-                                        <TableHead>PFN</TableHead>
-                                        <TableHead>EBITDA</TableHead>
-                                        <TableHead>Debt</TableHead>
+                                        <TableHead className="w-24">Anno</TableHead>
+                                        <TableHead className="min-w-36">Sales</TableHead>
+                                        <TableHead className="min-w-36">Income</TableHead>
+                                        <TableHead className="min-w-36">PFN</TableHead>
+                                        <TableHead className="min-w-36">EBITDA</TableHead>
+                                        <TableHead className="min-w-36">Debt</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -353,11 +363,21 @@ export default function MergeAcquisitionShow({
                                         financials.map((financial) => (
                                             <TableRow key={financial.id}>
                                                 <TableCell className="font-medium">{financial.year}</TableCell>
-                                                <TableCell>{financial.sales}</TableCell>
-                                                <TableCell>{financial.income}</TableCell>
-                                                <TableCell>{financial.pfn}</TableCell>
-                                                <TableCell>{financial.ebitda}</TableCell>
-                                                <TableCell>{financial.debt ?? 'N/D'}</TableCell>
+                                                <TableCell className="whitespace-normal">
+                                                    <p className="break-all">{financial.sales}</p>
+                                                </TableCell>
+                                                <TableCell className="whitespace-normal">
+                                                    <p className="break-all">{financial.income}</p>
+                                                </TableCell>
+                                                <TableCell className="whitespace-normal">
+                                                    <p className="break-all">{financial.pfn}</p>
+                                                </TableCell>
+                                                <TableCell className="whitespace-normal">
+                                                    <p className="break-all">{financial.ebitda}</p>
+                                                </TableCell>
+                                                <TableCell className="whitespace-normal">
+                                                    <p className="break-all">{financial.debt ?? 'N/D'}</p>
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     )}

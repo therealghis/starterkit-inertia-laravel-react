@@ -116,9 +116,6 @@ export default function DueDiligenceItemAttachments({
                         <Paperclip className="h-4 w-4" />
                         Allegati
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                        Gestisci i documenti collegati a questo elemento.
-                    </p>
                 </div>
 
                 <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
@@ -206,7 +203,7 @@ export default function DueDiligenceItemAttachments({
                                 className="flex flex-col gap-3 rounded-lg border border-border/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                             >
                                 <div className="min-w-0 space-y-1">
-                                    <p className="truncate text-sm font-medium text-foreground">
+                                    <p className="break-all text-sm font-medium text-foreground">
                                         {attachment.filename}
                                     </p>
                                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">

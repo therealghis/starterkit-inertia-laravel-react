@@ -168,7 +168,7 @@ export default function FileUpload({
                                 className="flex items-center justify-between gap-4 rounded-md border border-border/70 px-3 py-2"
                             >
                                 <div className="min-w-0">
-                                    <p className="truncate font-medium text-foreground">
+                                    <p className="break-all font-medium text-foreground">
                                         {file.name}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
