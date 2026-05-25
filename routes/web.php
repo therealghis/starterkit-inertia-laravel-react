@@ -1,6 +1,13 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DueDiligenceController;
+use App\Http\Controllers\DueDiligenceCustomItemController;
+use App\Http\Controllers\DueDiligenceItemAttachmentController;
+use App\Http\Controllers\DueDiligenceItemNotesController;
+use App\Http\Controllers\DueDiligenceItemStatusController;
+use App\Http\Controllers\DueDiligenceTemplateController;
+use App\Http\Controllers\DueDiligenceTemplateItemController;
 use App\Http\Controllers\MergeAcquisitionController;
 use App\Http\Controllers\MergeAcquisitionContactRequestController;
 use App\Http\Controllers\MergeAcquisitionFavoriteController;
@@ -32,10 +39,50 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [MergeAcquisitionController::class, 'sellSide'],
     )->name('merge_acquisition.sell_side');
     Route::resource('merge_acquisition', MergeAcquisitionController::class);
+    Route::resource(
+        'merge_acquisition.due_diligences',
+        DueDiligenceController::class,
+    )->shallow();
+    Route::resource(
+        'due_diligence_templates',
+        DueDiligenceTemplateController::class,
+    );
+    Route::resource(
+        'due_diligence_templates.items',
+        DueDiligenceTemplateItemController::class,
+    )->shallow()->only(['store', 'update', 'destroy']);
     Route::get(
         'merge_acquisition/{mergeAcquisition}/attachments/{attachment}/download',
         [MergeAcquisitionController::class, 'downloadAttachment'],
     )->name('merge_acquisition.attachment.download');
+    Route::post(
+        'due_diligences/{dueDiligence}/custom-items',
+        [DueDiligenceCustomItemController::class, 'store'],
+    )->name('due_diligences.custom_items.store');
+    Route::delete(
+        'due_diligence_items/{dueDiligenceItem}/custom',
+        [DueDiligenceCustomItemController::class, 'destroy'],
+    )->name('due_diligence_items.custom.destroy');
+    Route::patch(
+        'due_diligence_items/{dueDiligenceItem}/status',
+        [DueDiligenceItemStatusController::class, 'update'],
+    )->name('due_diligence_items.status.update');
+    Route::patch(
+        'due_diligence_items/{dueDiligenceItem}/notes',
+        [DueDiligenceItemNotesController::class, 'update'],
+    )->name('due_diligence_items.notes.update');
+    Route::post(
+        'due_diligence_items/{dueDiligenceItem}/attachments',
+        [DueDiligenceItemAttachmentController::class, 'store'],
+    )->name('due_diligence_items.attachments.store');
+    Route::get(
+        'due_diligence_items/{dueDiligenceItem}/attachments/{attachment}/download',
+        [DueDiligenceItemAttachmentController::class, 'download'],
+    )->name('due_diligence_items.attachments.download');
+    Route::delete(
+        'due_diligence_items/{dueDiligenceItem}/attachments/{attachment}',
+        [DueDiligenceItemAttachmentController::class, 'destroy'],
+    )->name('due_diligence_items.attachments.destroy');
 
     Route::controller(MyOppurtunitiesController::class)
         ->prefix('merge_acquisition_mine')
