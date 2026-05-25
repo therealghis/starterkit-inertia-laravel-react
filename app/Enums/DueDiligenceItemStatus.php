@@ -8,7 +8,11 @@ enum DueDiligenceItemStatus: string {
     case COMPLETED = 'completed';
     case NOT_APPLICABLE = 'not_applicable';
 
-    public static function label($status): string {
+    public static function label(self|string $status): string {
+        if (is_string($status)) {
+            $status = self::tryFrom($status);
+        }
+
         return match ($status) {
             self::OPEN => 'Aperto',
             self::IN_PROGRESS => 'In corso',
