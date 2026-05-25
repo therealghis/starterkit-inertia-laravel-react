@@ -3,6 +3,7 @@ import { CirclePlus, Files, FolderSearch, Trash2 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { create as dueDiligenceTemplateCreate, index as dueDiligenceTemplateIndex } from '@/routes/due_diligence_templates';
 import type { BreadcrumbItem } from '@/types';
+import ConfirmActionDialog from '@/components/confirm-action-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,15 +58,9 @@ export default function DueDiligenceTemplatesIndex({
         },
     ];
 
-    const handleDelete = (template: DueDiligenceTemplatesIndexProps['templates'][number]) => {
-        if (
-            !window.confirm(
-                `Eliminare il template "${template.name}"? Questa azione non modifica le due diligence gia create.`,
-            )
-        ) {
-            return;
-        }
-
+    const handleDelete = (
+        template: DueDiligenceTemplatesIndexProps['templates'][number],
+    ) => {
         router.delete(template.delete_url, {
             preserveScroll: true,
         });
@@ -205,17 +200,18 @@ export default function DueDiligenceTemplatesIndex({
                                                                 Modifica
                                                             </Link>
                                                         </Button>
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            onClick={() =>
+                                                        <ConfirmActionDialog
+                                                            triggerLabel="Elimina"
+                                                            title="Eliminare il template?"
+                                                            description={`Il template "${template.name}" verra eliminato. Questa azione non modifica le due diligence gia create.`}
+                                                            confirmLabel="Elimina template"
+                                                            onConfirm={() =>
                                                                 handleDelete(template)
                                                             }
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                            Elimina
-                                                        </Button>
+                                                            triggerIcon={
+                                                                <Trash2 className="size-4" />
+                                                            }
+                                                        />
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

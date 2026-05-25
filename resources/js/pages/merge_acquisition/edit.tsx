@@ -36,6 +36,7 @@ import AppLayout from '@/layouts/app-layout';
 import MergeAcquisitionFormFields from '@/pages/merge_acquisition/merge-acquisition-form-fields';
 import type { EconomicActivityOption, MergeAcquisitionFormData } from '@/pages/merge_acquisition/merge-acquisition-form-fields';
 import { index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
+import { index as mergeAcquisitionDueDiligenceIndex } from '@/routes/merge_acquisition/due_diligences';
 import type { BreadcrumbItem } from '@/types';
 
 type AttachmentRecord = {
@@ -420,6 +421,11 @@ export default function MergeAcquisitionEdit({
                                 <Button asChild variant="outline" size="lg">
                                     <Link href={mergeAcquisitionIndex()}>
                                         Torna alla lista
+                                    </Link>
+                                </Button>
+                                <Button asChild variant="outline" size="lg">
+                                    <Link href={mergeAcquisitionDueDiligenceIndex(mergeAcquisition.id)}>
+                                        Gestisci Due Diligence
                                     </Link>
                                 </Button>
                             </PageHeroActions>

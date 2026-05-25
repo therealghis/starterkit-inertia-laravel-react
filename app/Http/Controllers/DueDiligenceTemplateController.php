@@ -59,14 +59,11 @@ class DueDiligenceTemplateController extends Controller {
         ]);
 
         return Inertia::render('due_diligence_templates/edit', [
-            'dueDiligenceTemplate' => [
+            'template' => [
                 'id' => $dueDiligenceTemplate->id,
                 'name' => $dueDiligenceTemplate->name,
                 'description' => $dueDiligenceTemplate->description,
                 'is_active' => $dueDiligenceTemplate->is_active,
-                'created_by_id' => $dueDiligenceTemplate->created_by_id,
-                'created_at' => $dueDiligenceTemplate->created_at,
-                'updated_at' => $dueDiligenceTemplate->updated_at,
             ],
             'items' => $dueDiligenceTemplate->items
                 ->map(fn (DueDiligenceTemplateItem $item): array => [
@@ -76,8 +73,8 @@ class DueDiligenceTemplateController extends Controller {
                     'request_text' => $item->request_text,
                     'sort_order' => $item->sort_order,
                     'is_active' => $item->is_active,
-                    'created_at' => $item->created_at,
-                    'updated_at' => $item->updated_at,
+                    'update_url' => route('items.update', $item),
+                    'delete_url' => route('items.destroy', $item),
                 ])
                 ->values(),
         ]);

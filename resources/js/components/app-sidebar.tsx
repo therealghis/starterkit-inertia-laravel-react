@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useTranslations } from '@/hooks/use-translations';
 import { dashboard } from '@/routes';
+import { index as dueDiligenceTemplateIndex } from '@/routes/due_diligence_templates';
 import {
     buy_side as mergeAcquisitionBuySide,
     index as mergeAcquisitionIndex,
@@ -70,6 +71,15 @@ export function AppSidebar() {
                         {
                             title: 'Sell-side',
                             href: mergeAcquisitionMineSellSide(),
+                        },
+                    ],
+                },
+                {
+                    title: 'Due Diligence',
+                    items: [
+                        {
+                            title: 'Checklist template',
+                            href: dueDiligenceTemplateIndex(),
                         },
                     ],
                 },

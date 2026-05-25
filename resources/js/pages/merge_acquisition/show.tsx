@@ -24,6 +24,7 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { index as mergeAcquisitionIndex } from '@/routes/merge_acquisition';
+import { index as mergeAcquisitionDueDiligenceIndex } from '@/routes/merge_acquisition/due_diligences';
 import type { BreadcrumbItem } from '@/types';
 
 type MergeAcquisitionDetail = {
@@ -148,6 +149,11 @@ export default function MergeAcquisitionShow({
                                 <Button asChild variant="outline" size="lg">
                                     <Link href={mergeAcquisitionIndex()}>
                                         Torna alla lista
+                                    </Link>
+                                </Button>
+                                <Button asChild variant="outline" size="lg">
+                                    <Link href={mergeAcquisitionDueDiligenceIndex(mergeAcquisition.id)}>
+                                        Due Diligence
                                     </Link>
                                 </Button>
                                 {editUrl ? (
