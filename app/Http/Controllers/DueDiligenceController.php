@@ -151,6 +151,14 @@ class DueDiligenceController extends Controller {
                             'disk' => $attachment->disk,
                             'size' => $attachment->size,
                             'created_at' => $attachment->created_at,
+                            'download_url' => route('due_diligence_items.attachments.download', [
+                                'dueDiligenceItem' => $item,
+                                'attachment' => $attachment,
+                            ]),
+                            'delete_url' => route('due_diligence_items.attachments.destroy', [
+                                'dueDiligenceItem' => $item,
+                                'attachment' => $attachment,
+                            ]),
                         ])
                         ->values(),
                 ])
