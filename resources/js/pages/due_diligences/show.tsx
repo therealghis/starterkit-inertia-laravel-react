@@ -1,5 +1,3 @@
-export default function show({}) {
-    return (
-
-    )
+export default function DueDiligencesShow() {
+    return null;
 }
